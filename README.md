@@ -2,12 +2,13 @@
 A secure, serverless tax document processing system built on AWS
 
 ## Storage Layer
-This system is designed to use Amazon S3 for secure document storage.
+This system uses Amazon S3 for secure document storage.
 
-Current status:
-- Local file storage implemented for testing
-- S3 integration coming next
+Implementation:
+- File uploads handled via Python (boto3)
+- Objects stored in S3 bucket
+- Scaleable and durable storage layer
 
-Planned features:
-- Encrypted storage (SSE-KMS)
-- Pre-signed upload URLs
+Next steps:
+- Add encryption controls
+- Implement access restrictions
