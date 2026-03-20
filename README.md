@@ -11,4 +11,8 @@ Implementation:
 
 Next steps:
 - Add encryption controls
-- Implement access restrictions 
+- Implement access restrictions
+
+## Architecture Diagram
+
+![Architecture](docs/architecture/architecture-v1.png)
