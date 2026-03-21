@@ -1,0 +1,8 @@
+2026-03-20 19:35:19 | test_document.pdf | 0 bytes | uploaded to tax-doc-system-chim-dev
+
+    Timestamp: 2026-03-20 19:44:29
+    File: test_document.pdf
+    Size: 0 bytes 
+    Destination: tax-doc-system-chim-dev
+    ------------------------------
+    
