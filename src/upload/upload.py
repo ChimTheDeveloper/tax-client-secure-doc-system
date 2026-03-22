@@ -3,7 +3,7 @@ import boto3
 import os
 
 ## Connecting upload audit & tracking system
-from audit.logger import log_upload
+from src.audit.logger import log_upload
 
 ## Initialize S3 client
 s3 = boto3.client("s3")

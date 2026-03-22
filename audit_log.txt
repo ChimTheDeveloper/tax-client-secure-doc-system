@@ -6,3 +6,10 @@
     Destination: tax-doc-system-chim-dev
     ------------------------------
     
+
+    Timestamp: 2026-03-22 08:34:44
+    File: test_document.pdf
+    Size: 0 bytes 
+    Destination: tax-doc-system-chim-dev
+    ------------------------------------
+    

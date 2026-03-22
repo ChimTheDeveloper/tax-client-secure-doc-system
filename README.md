@@ -11,6 +11,15 @@ This system is designed to allow tax professionals to upload, store, and process
 - Input validation for file handling
 - Modular backend structure
 
+## Security
+
+This system uses IAM policies to enforce least-privilege access.
+
+- Restricted permissions to only allow file uploads
+- Scoped access to a specific S3 bucket
+
+This ensures secure interaction with cloud resources.
+
 ## System Flow
 
 User --> Upload Script --> AWS S3 --> Audit Logging
