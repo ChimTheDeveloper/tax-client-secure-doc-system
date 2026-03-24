@@ -20,6 +20,16 @@ This system uses IAM policies to enforce least-privilege access.
 
 This ensures secure interaction with cloud resources.
 
+## API Validation
+ 
+ The upload API enforces:
+
+ - PDF-only file uploads
+ - Maximum file size limit (5MB)
+ - Unique file naming using UUIDs
+
+ These controls ensure safe and predictable document ingestion.
+
 ## System Flow
 
 User --> Upload Script --> AWS S3 --> Audit Logging
