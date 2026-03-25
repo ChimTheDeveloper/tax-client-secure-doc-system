@@ -1,0 +1,18 @@
+# Python stuff
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Sensitive Data (Tax Project Specific)
+*.pdf
+*.csv
+*.xlsx
+clients/
+tmp/
+temp_uploads/
+audit_log.txt
+
+# OS stuff
+.DS_Store
