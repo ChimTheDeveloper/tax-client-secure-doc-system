@@ -38,6 +38,7 @@ async def upload_document(file: UploadFile = File(...)):
             raise HTTPException(status_code=400, detail="File exceeds 5MD limit")
 
         upload_file(file_path)
+        os.remove(file_path)
 
         return {
             "message": "File uploaded successfully",
