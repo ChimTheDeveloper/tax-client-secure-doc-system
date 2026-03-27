@@ -20,13 +20,13 @@ This system uses IAM policies to enforce least-privilege access.
 
 This ensures secure interaction with cloud resources.
 
-## API Validation
+## API File Validation
  
- The upload API enforces:
+ This system enforces strict validation rules:
 
- - PDF-only file uploads
- - Maximum file size limit (5MB)
- - Unique file naming using UUIDs
+ - Only PDF files are accepted
+ - Maximum file size limit: 5MB
+ - Invalid files are rejected before processing
 
  These controls ensure safe and predictable document ingestion.
 
