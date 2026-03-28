@@ -27,12 +27,12 @@ def extract_basic_fields(text):
     data = {}
     
     ## SSN pattern
-    ssn_match = re.search(r"\d{3}-\d{2}-\d{4}, text")
+    ssn_match = re.search(r"\d{3}-\d{2}-\d{4}", text)
     if ssn_match:
-        data["income"] = ssn_match.group()
+        data["ssn"] = ssn_match.group()
 
     ## Income match
-    income_match = re.search(r"\$?\d{2,3}, \d{3}, text")
+    income_match = re.search(r"\$?\d{1,3}(?:,\d{3})*", text)
     if income_match:
         data["income"] = income_match.group()
 
