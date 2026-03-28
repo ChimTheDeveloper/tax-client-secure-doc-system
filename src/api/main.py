@@ -6,6 +6,7 @@ import uuid
 import boto3
 
 from src.upload.upload import upload_file
+from src.processing.parser import process_document
 
 app = FastAPI()
 
@@ -47,7 +48,7 @@ async def upload_document(file: UploadFile = File(...)):
     try:
         ## VALIDATE FILE TYPE
         if not file.filename.endswith(".pdf"):
-            raise HTTPException(status_code=400, detial="Only PDF files are allowed")
+            raise HTTPException(status_code=400, detial= "Only PDF files are allowed")
         
         ## GENERATE SAFE UNIQUE NAME
         unique_id = str(uuid.uuid4())
@@ -59,11 +60,14 @@ async def upload_document(file: UploadFile = File(...)):
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
+        result = process_document(file_path)
+        print("[PROCESSING_RESULT]", result)
+
         ## VALIDATE FILE SIZE
         file_size = os.path.getsize(file_path)
         if file_size > MAX_FILE_SIZE:
             os.remove(file_path)
-            raise HTTPException(status_code=400, detail="File exceeds 5MD limit")
+            raise HTTPException(status_code=400, detail= "File exceeds 5MD limit")
 
         upload_file(file_path)
         os.remove(file_path)
