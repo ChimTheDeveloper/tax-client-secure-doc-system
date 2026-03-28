@@ -13,3 +13,10 @@
     Destination: tax-doc-system-chim-dev
     ------------------------------------
     
+
+    Timestamp: 2026-03-26 17:18:11
+    File: HOURLY RATES FOR SERVICES.pdf
+    Size: 187732 bytes 
+    Destination: tax-doc-system-chim-dev
+    ------------------------------------
+    

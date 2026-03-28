@@ -3,16 +3,44 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 import shutil
 import os
 import uuid
+import boto3
 
 from src.upload.upload import upload_file
 
 app = FastAPI()
+
+s3 =boto3.client("s3")
+BUCKET_NAME = "tax-doc-system-chim-dev"
 
 TEMP_DIR = "temp_uploads"
 MAX_FILE_SIZE = 5 * 1024 * 1024
 
 if not os.path.exists(TEMP_DIR):
     os.makedirs(TEMP_DIR)
+
+from fastapi import Query
+
+@app.get("/generate-upload-url")
+def generate_upload_url(filename: str = Query(...)):
+    try:
+        unique_filename = f"{uuid.uuid4()}_{filename}"
+
+        url = s3.generate_presigned_url(
+            ClientMethod="put_object",
+            Params={
+                "Bucket": BUCKET_NAME,
+                "Key": unique_filename,
+                "ContentType": "application/pdf"
+            },
+            ExpiresIn=300
+        )
+
+        return {
+            "upload_url": url,
+            "filename": unique_filename
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
 @app.post("/upload")
 async def upload_document(file: UploadFile = File(...)):
