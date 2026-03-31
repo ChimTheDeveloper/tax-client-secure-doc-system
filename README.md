@@ -39,16 +39,28 @@ User --> Upload Script --> AWS S3 --> Audit Logging
 3. File is uploaded to AWS S3
 4. Metadata is logged for audit tracking
 
-## Audit Logging
+## Document Processing
 
-Each uploaded file generates a log entry containing:
+Uploaded documents are processed to extract structured data.
 
+Pipeline:
+- Extract text from PDF
+- Classify document type (W2, 1099, etc.)
+- Extract key fields (SSN, income)
+
+Results are stored in structured JSON format.
+
+## Audit Logging (DynamoDB)
+
+The system stores structured audit logs in DynanoDB.
+
+Each upload records:
 - Timestamp
 - File name
 - File size
-- Destination (S3 bucket)
+- Upload method
 
-This provides traceability and lays the foundation for compliance and monitoring.
+This enables scalable tracking and future analytics.
 
 ## Storage Layer
 This system uses Amazon S3 for secure document storage.

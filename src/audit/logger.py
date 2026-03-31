@@ -1,16 +1,10 @@
 import os
-from datetime   import datetime
+from datetime import datetime
 
 LOG_FILE = "audit_log.txt"
 
-def log_upload(file_path, bucket_name):
-    ## Logs metadata for uploaded files for audit tracking
-    if not os.path.exists(file_path):
-        print("[ERROR] File does not exist")
-        return
-    
-    filename = os.path.basename(file_path)
-    file_size = os.path.getsize(file_path)
+def log_upload(filename, bucket_name, file_size):
+
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     log_entry = f"""
@@ -21,7 +15,10 @@ def log_upload(file_path, bucket_name):
     ------------------------------------
     """
 
-    with open(LOG_FILE, "a") as log:
-        log.write(log_entry + "\n")
-
-    print(f"[AUDIT] {log_entry}")
+    # Ensure we append to the log file safely
+    try:
+        with open(LOG_FILE, "a") as log:
+            log.write(log_entry + "\n")
+        print(f"[AUDIT] Logged upload for: {filename}")
+    except Exception as e:
+        print(f"[ERROR] Could not write to audit log: {e}")

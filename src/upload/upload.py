@@ -1,35 +1,28 @@
-## Simulate secure file uploads before integrating with cloud storage
 import boto3
-import os
-
-## Connecting upload audit & tracking system
 from src.audit.logger import log_upload
 
-## Initialize S3 client
-s3 = boto3.client("s3")
+# Initialize S3 client
+s3 = boto3.client("s3", region_name="us-east-1")
 
 BUCKET_NAME = "tax-doc-system-chim-dev"
 
-def upload_file(file_path):
-    ## Uploads a file to AWS S3
-    
+def upload_file(file_bytes, bucket_name, filename):
+
     try:
-        ## Validation step
-        if not os.path.exists(file_path):
-            print("[ERROR] File not found")
-            return
-        ## Extract file name
-        filename = os.path.basename(file_path)
-        ## Upload to S3
-        s3.upload_file(file_path, BUCKET_NAME, filename)
-        ## Updating upload to include audit & tracking
-        log_upload(file_path, BUCKET_NAME)
-        print(f"[SUCCESS] Uploaded {filename} to S3 bucket: {BUCKET_NAME}")
+        # Use put_object for bytes instead of upload_file for paths
+        s3.put_object(
+            Bucket=bucket_name,
+            Key=filename,
+            Body=file_bytes,
+            ContentType="application/pdf" # Good for tax docs
+        )
+        
+        # Log the upload (Note: pass the filename now instead of a path)
+        log_upload(filename, bucket_name)
+        
+        print(f"[SUCCESS] Uploaded {filename} to S3 bucket: {bucket_name}")
+        return True
 
     except Exception as e:
-        print(f"[ERROR] Upload failed")
-        print(f"Details: {str(e)}")
-
-if __name__ == "__main__":
-    test_file = "test_document.pdf"
-    upload_file(test_file)
+        print(f"[ERROR] Upload failed: {str(e)}")
+        return False

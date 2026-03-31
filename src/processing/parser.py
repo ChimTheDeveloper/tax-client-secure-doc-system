@@ -1,47 +1,39 @@
-from PyPDF2 import PdfReader
-
-def extract_text_from_pdf(file_path):
-    reader = PdfReader(file_path)
-    text = ""
-
-    for page in reader.pages:
-        text += page.extract_text() or ""
-
-    return text
+import re
 
 def classify_document(text):
     text = text.lower()
-
     if "w-2" in text:
         return "W2"
     elif "1099" in text:
         return "1099"
     elif "schedule c" in text:
-        return "Schedule C" ## NTS: Update complete list of possible tax documents ASAP
-    else:
-        return "Unknown"
-    
-import re
+        return "Schedule C"
+    return "Unknown"
 
 def extract_basic_fields(text):
     data = {}
-    
-    ## SSN pattern
+    # SSN pattern
     ssn_match = re.search(r"\d{3}-\d{2}-\d{4}", text)
     if ssn_match:
         data["ssn"] = ssn_match.group()
 
-    ## Income match
+    # Income match - using the fix we discussed for your tax project
     income_match = re.search(r"\$?\d{1,3}(?:,\d{3})*", text)
     if income_match:
         data["income"] = income_match.group()
-
     return data
 
-def process_document(file_path):
-    text = extract_text_from_pdf(file_path)
-    doc_type = classify_document(text)
-    fields = extract_basic_fields(text)
+def process_document(file_bytes, raw_text_data):
+
+    # 1. Convert Textract blocks into a single string for your regex/logic
+    full_text = ""
+    for block in raw_text_data.get("Blocks", []):
+        if block["BlockType"] == "WORD":
+            full_text += block["Text"] + " "
+    
+    # 2. Use your existing logic on the extracted text
+    doc_type = classify_document(full_text)
+    fields = extract_basic_fields(full_text)
 
     return {
         "document_type": doc_type,
