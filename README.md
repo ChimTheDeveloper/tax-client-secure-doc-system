@@ -1,24 +1,22 @@
-## Secure Tax Document Processing System
-A secure, serverless tax document processing system built on AWS
+## Secure Tax Document Intelligence System
+An AI-powered, memory-resident processing engine for sensitive tax documents.
 
-This system is designed to allow tax professionals to upload, store, and process sensitive client documents securely while maintaining auditibility and scalability.
+This system is designed to allow tax professionals to upload, store, and process sensitive client documents securely while maintaining auditability and scalability.
 
 ## Current Features
 
-- File upload system built in Python
-- Integration with AWS S3 for cloud storage
-- Audit logging system for tracking uploads
-- Input validation for file handling
-- Modular backend structure
+- Zero-Disk Processing: Documents are handled as in-memory byte streams to ensure no sensitive data is written to local temp storage.
+- AI-Powered Extraction: Integrated AWS Textract for high-accuracy OCR and Form extraction.
+- Dual-Layer Auditing: Every action is logged to both a local forensic audit trail and a distributed Amazon DynamoDB table.
+- Modular Backend Structure: Clean separation between ingestion, processing, and storage.
 
 ## Security
 
 This system uses IAM policies to enforce least-privilege access.
 
-- Restricted permissions to only allow file uploads
+- Restricted permissions to only allow file uploads and Textract analysis
 - Scoped access to a specific S3 bucket
-
-This ensures secure interaction with cloud resources.
+- In-Memory Lifecycle: Files are processed in RAM and uploaded to S3 without hitting the server file system.
 
 ## API File Validation
  
@@ -28,56 +26,52 @@ This ensures secure interaction with cloud resources.
  - Maximum file size limit: 5MB
  - Invalid files are rejected before processing
 
- These controls ensure safe and predictable document ingestion.
-
 ## System Flow
 
-User --> Upload Script --> AWS S3 --> Audit Logging
+User --> FastAPI Ingestion --> AWS Textract --> AWS S3 --> Audit Logging
 
-1. User provides a file
-2. System validates file existence
-3. File is uploaded to AWS S3
-4. Metadata is logged for audit tracking
+1. User provides a file via POST request
+2. System converts file to memory-resident byte stream
+3. Bytes are sent directly to AWS Textract for OCR and mapping
+4. File is uploaded to AWS S3 via put_object
+5. Metadata is logged to DynamoDB and local audit files
 
 ## Document Processing
 
-Uploaded documents are processed to extract structured data.
+Uploaded documents are processed to extract structured data using a hybrid AI and Regex approach.
 
 Pipeline:
-- Extract text from PDF
-- Classify document type (W2, 1099, etc.)
+- Extract text and Form data via AWS Textract
+- Classify document type (W2, 1099, Schedule C)
 - Extract key fields (SSN, income)
 
-Results are stored in structured JSON format.
+Results are stored in structured JSON format for downstream tax workflows.
 
 ## Audit Logging (DynamoDB)
 
-The system stores structured audit logs in DynanoDB.
+The system stores structured audit logs in DynamoDB for scalable tracking.
 
 Each upload records:
-- Timestamp
+- Timestamp (UTC)
 - File name
-- File size
+- File size (calculated from byte stream)
 - Upload method
 
-This enables scalable tracking and future analytics.
-
 ## Storage Layer
-This system uses Amazon S3 for secure document storage.
+This system uses Amazon S3 for secure, durable document storage.
 
 Implementation:
 - File uploads handled via Python (boto3)
-- Objects stored in S3 bucket
-- Scaleable and durable storage layer
+- Objects stored directly from memory to S3 bucket
+- Encrypted storage layer with scoped IAM access
 
 ## Roadmap
 
-- Implement IAM role-based access control
-- Restrict S3 permissions
-- Add database layer (DynamoDB) for structured logging
-- Build document processing pipeline (AWS Lambda)
-- Add authentication system
+- Implement AWS KMS (Key Management Service) for S3 Envelope Encryption
+- Add JWT-based authentication for tax professionals
+- Build frontend dashboard for data verification
+- Implement automated tax form validation rules
 
 ## Architecture Diagram
 
-![Architecture](docs/architecture/architecture-v1.png)
+![Architecture](docs/architecture/architecture-v2.png)
