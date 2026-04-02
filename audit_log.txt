@@ -41,3 +41,13 @@
     Destination: tax-doc-system-chim-dev
     ------------------------------------
     
+Timestamp: 2026-04-01 20:15:47
+File:      06f2e984-4079-43bd-8ab8-2d9d060779e5_sample_W2.pdf
+Size:      Unknown bytes
+Bucket:    tax-doc-system-chim-dev
+----------------------------------------
+Timestamp: 2026-04-01 20:15:47
+File:      06f2e984-4079-43bd-8ab8-2d9d060779e5_sample_W2.pdf
+Size:      163,038 bytes
+Bucket:    tax-doc-system-chim-dev
+----------------------------------------

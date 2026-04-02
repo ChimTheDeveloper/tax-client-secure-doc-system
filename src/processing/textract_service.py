@@ -6,14 +6,26 @@ textract = boto3.client("textract", region_name="us-east-1")
 
 def analyze_document_bytes(file_bytes):
     try:
+        # 1. Immediate check: if bytes are empty, don't even call AWS
+        if not file_bytes:
+            print("[ERROR] No bytes provided to Textract")
+            return {}
+
+        # 2. Call AWS Textract
         response = textract.analyze_document(
             Document={'Bytes': file_bytes},
             FeatureTypes=['FORMS', 'TABLES']
         )
+        
+        # 3. DEBUG: This helps you see if AWS actually sent data
+        print(f"[DEBUG] Textract Status: {response.get('ResponseMetadata', {}).get('HTTPStatusCode')}")
+        
         return response
+
     except Exception as e:
-        print(f"Textract Error: {e}")
-        return {}
+        # 4. If AWS fails (credentials, timeout, etc.), catch it here
+        print(f"[TEXTRACT ERROR] {str(e)}")
+        return {} # Returning an empty dict prevents the "Line 1 Column 1" crash later
 
 def process_document(file_bytes):
 

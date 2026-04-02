@@ -25,9 +25,21 @@ def extract_basic_fields(text):
 
 def process_document(file_bytes, raw_text_data):
 
+    if not raw_text_data or "Blocks" not in raw_text_data:
+        print("[ERROR] Parser received empty Textract data")
+        return {"document_type": "Unknown", "extracted_fields": {}}
+    
+    blocks = raw_text_data.get("Blocks", [])
+
+    full_text = ""
+    # Use .get() to avoid crashing if Blocks is missing
+    for block in blocks:
+        if block["BlockType"] == "WORD":
+            full_text += block["Text"] + " "
+
     # 1. Convert Textract blocks into a single string for your regex/logic
     full_text = ""
-    for block in raw_text_data.get("Blocks", []):
+    for block in blocks:
         if block["BlockType"] == "WORD":
             full_text += block["Text"] + " "
     
