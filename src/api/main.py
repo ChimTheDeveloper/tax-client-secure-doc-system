@@ -8,7 +8,9 @@ from src.processing.parser import process_document
 from src.processing.storage import save_result
 from src.processing.textract_service import analyze_document_bytes
 from src.audit.logger import log_upload
-from src.audit.db_logger import log_to_db
+from src.processing.field_mapper import map_textract_to_tax_fields
+from src.processing.validator import validate_w2_data
+# from src.audit.db_logger import log_to_db
 
 app = FastAPI()
 
@@ -64,14 +66,37 @@ async def upload_document(file: UploadFile = File(...)):
         if file_size > MAX_FILE_SIZE:
             raise HTTPException(status_code=400, detail= "File exceeds 5MB limit")
         
-        ## STEP 3. CALL TEXTRACT USING BYTES
+        # STEP 3. TEXTRACT PROCESSING
         raw_text_data = analyze_document_bytes(file_bytes)
+        print("[TEXTRACT RESPONSE RECEIVED]")
 
-        # PASS BYTES TO PARSER & TEXTRACT
+        # STEP 4. PROCESS DOCUMENT
         result = process_document(file_bytes, raw_text_data)
-        print("[TEXTRACT RESPONSE RECIEVED]")
 
-        ## STEP 4. PROCEED WITH ANALYZING AND SAVING
+        # STEP 5. MAP TO TAX FIELDS
+        mapped_data = map_textract_to_tax_fields(raw_text_data)
+
+        validated_data, confidence = validate_w2_data(mapped_data)
+
+        print("[VALIDATED DATA]", validated_data)
+        print("[CONFIDENCE]", confidence)
+
+        # STEP 6. — STRICT VALIDATION (REJECT BAD DATA)
+        # STEP 6 — STRICT VALIDATION (REJECT LOW-CONFIDENCE CORE FIELDS)
+        if (
+            confidence.get("wages_box_1") == "low" or
+            confidence.get("employer_ein") == "low"
+        ):
+            
+            raise HTTPException(
+                status_code=422,
+                detail="Unable to confidently extract required W-2 data (Wages or EIN invalid)"
+        )
+
+        # Attach mapped data to result
+        result["mapped_data"] = mapped_data
+
+        ## STEP 7. PROCEED WITH ANALYZING AND SAVING
 
         # GENERATE SAFE UNIQUE NAME & SAVE METADATA
         unique_id = str(uuid.uuid4())
@@ -81,20 +106,22 @@ async def upload_document(file: UploadFile = File(...)):
         result["size"] = file_size
         save_result(result)
 
-        ## STEP 5. UPLOAD TO S3
+        ## STEP 8. UPLOAD TO S3
         upload_success = upload_file(file_bytes, BUCKET_NAME, filename)
         
         if upload_success:
             # LOG TO TEXT FILE
             log_upload(filename, BUCKET_NAME, file_size)
             
-            # LOG TO DYNAMODB
-            log_to_db(filename, file_size, "FastAPI_Memory_Upload")
+            # LOG TO DYNAMODB (coming soon)
+            # log_to_db(filename, file_size, "FastAPI_Memory_Upload")
 
         return {
-            "message": "File uploaded successfully",
-            "filename": filename,
-            "size": file_size,
+            "status": "success",
+            "file_name": filename,
+            "file_size": file_size,
+            "data": validated_data,
+            "confidence": confidence
         }
     
     except Exception as e:
