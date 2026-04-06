@@ -9,6 +9,7 @@ from src.processing.storage import save_result
 from src.processing.textract_service import analyze_document_bytes
 from src.audit.logger import log_upload
 from src.processing.field_mapper import map_textract_to_tax_fields
+from src.processing.classifier import classify_document
 from src.processing.validator import validate_w2_data
 # from src.audit.db_logger import log_to_db
 
@@ -70,10 +71,20 @@ async def upload_document(file: UploadFile = File(...)):
         raw_text_data = analyze_document_bytes(file_bytes)
         print("[TEXTRACT RESPONSE RECEIVED]")
 
-        # STEP 4. PROCESS DOCUMENT
+        # STEP 4. CLASSIFY DOCUMENT
+        doc_type = classify_document(raw_text_data)
+        print("[DOCUMENT TYPE]", doc_type)
+
+        if doc_type != "W2":
+            raise HTTPException(
+                status_code=422,
+                detail="Uploaded document is not a W-2. Processing aborted."
+            )
+
+        # STEP 5. PROCESS DOCUMENT
         result = process_document(file_bytes, raw_text_data)
 
-        # STEP 5. MAP TO TAX FIELDS
+        # STEP 6. MAP TO TAX FIELDS
         mapped_data = map_textract_to_tax_fields(raw_text_data)
 
         validated_data, confidence = validate_w2_data(mapped_data)
@@ -81,8 +92,7 @@ async def upload_document(file: UploadFile = File(...)):
         print("[VALIDATED DATA]", validated_data)
         print("[CONFIDENCE]", confidence)
 
-        # STEP 6. — STRICT VALIDATION (REJECT BAD DATA)
-        # STEP 6 — STRICT VALIDATION (REJECT LOW-CONFIDENCE CORE FIELDS)
+        # STEP 7. STRICT VALIDATION (REJECT LOW-CONFIDENCE CORE FIELDS)
         if (
             confidence.get("wages_box_1") == "low" or
             confidence.get("employer_ein") == "low"
@@ -96,7 +106,7 @@ async def upload_document(file: UploadFile = File(...)):
         # Attach mapped data to result
         result["mapped_data"] = mapped_data
 
-        ## STEP 7. PROCEED WITH ANALYZING AND SAVING
+        ## STEP 8. PROCEED WITH ANALYZING AND SAVING
 
         # GENERATE SAFE UNIQUE NAME & SAVE METADATA
         unique_id = str(uuid.uuid4())
@@ -106,7 +116,7 @@ async def upload_document(file: UploadFile = File(...)):
         result["size"] = file_size
         save_result(result)
 
-        ## STEP 8. UPLOAD TO S3
+        ## STEP 9. UPLOAD TO S3
         upload_success = upload_file(file_bytes, BUCKET_NAME, filename)
         
         if upload_success:
