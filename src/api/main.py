@@ -11,6 +11,7 @@ from src.audit.logger import log_upload
 from src.processing.field_mapper import map_textract_to_tax_fields
 from src.processing.classifier import classify_document
 from src.processing.validator import validate_w2_data
+from src.processing.normalizer import normalize_w2_data
 # from src.audit.db_logger import log_to_db
 
 app = FastAPI()
@@ -92,6 +93,12 @@ async def upload_document(file: UploadFile = File(...)):
         print("[VALIDATED DATA]", validated_data)
         print("[CONFIDENCE]", confidence)
 
+        # STEP 7. NORMALIZE DATA
+
+        normalized_data = normalize_w2_data(validated_data)
+
+        print("[NORMALIZED DATA]", normalized_data)
+
         # STEP 7. STRICT VALIDATION (REJECT LOW-CONFIDENCE CORE FIELDS)
         if (
             confidence.get("wages_box_1") == "low" or
@@ -130,7 +137,7 @@ async def upload_document(file: UploadFile = File(...)):
             "status": "success",
             "file_name": filename,
             "file_size": file_size,
-            "data": validated_data,
+            "data": normalized_data,
             "confidence": confidence
         }
     
