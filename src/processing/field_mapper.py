@@ -1,4 +1,10 @@
 def map_textract_to_tax_fields(response):
+    raw_text = ""
+
+    for block in response.get("Blocks", []):
+        if block.get("BlockType") == "LINE":
+            raw_text += block.get("Text", "") + "\n"
+
     blocks = response.get("Blocks", [])
 
     block_map = {block["Id"]: block for block in blocks}
@@ -136,5 +142,29 @@ def map_textract_to_tax_fields(response):
 
                 if "wages" in text and "$" in text:
                     extracted["wages_box_1"] = text
+
+    # PASS 2 - LINE-BASED FALLBACK
+
+    if extracted["wages_box_1"] is None:
+        for line in raw_text.lower().split("\n"):
+            if "wages" in line and any(char.isdigit() for char in line):
+                extracted["wages_box_1"] = line.strip()
+
+    if extracted["employer_ein"] is None:
+        for line in raw_text.split("\n"):
+            if "-" in line and len(line.strip()) <= 15:
+                extracted["employer_ein"] = line.strip()
+
+    # PASS 3 - REGEX PRECISION EXTRACTION
+
+    if extracted["wages_box_1"] is None:
+        for line in raw_text.lower().split("\n"):
+            if "wages" in line and any(char.isdigit() for char in line):
+                extracted["wages_box_1"] = line.strip()
+
+    if extracted["employer_ein"] is None:
+        for line in raw_text.split("\n"):
+            if "-" in line and len(line.strip()) <= 15:
+                extracted["employer_ein"] = line.strip()
 
     return extracted
