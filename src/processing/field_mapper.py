@@ -1,3 +1,21 @@
+import re
+
+def split_name_address(full_text):
+
+    if not full_text:
+        return None, None
+
+    parts = full_text.split()
+
+    # Heuristic: name is first 2–4 words, rest is address
+    name_parts = parts[:4]
+    address_parts = parts[4:]
+
+    name = " ".join(name_parts)
+    address = " ".join(address_parts)
+
+    return name.strip(), address.strip()
+
 def map_textract_to_tax_fields(response):
     raw_text = ""
 
@@ -80,11 +98,14 @@ def map_textract_to_tax_fields(response):
             extracted["employer_ein"] = value_text
 
         elif "employer" in key_text and "name" in key_text:
-            extracted["employer_name"] = value_text
+            name, address = split_name_address(value_text)
+            extracted["employer_name"] = name
+            extracted["employer_address"] = address
 
         elif "employee" in key_text and "name" in key_text:
-            extracted["employee_name"] = value_text
-
+            name, address = split_name_address(value_text)
+            extracted["employee_name"] = name
+            extracted["employee_address"] = address
 
         # FEDERAL BOXES
 
@@ -167,4 +188,24 @@ def map_textract_to_tax_fields(response):
             if "-" in line and len(line.strip()) <= 15:
                 extracted["employer_ein"] = line.strip()
 
+    # PASS 3 — EIN REGEX EXTRACTION (HIGH PRIORITY FALLBACK)
+
+    import re
+
+    # Try strict EIN format first (XX-XXXXXXX)
+    match = re.search(r"\b\d{2}-\d{7}\b", raw_text)
+
+    # If not found, try 9-digit fallback
+    if not match:
+        match = re.search(r"\b\d{9}\b", raw_text)
+
+    if match:
+        ein = match.group()
+
+        # Normalize if it's 9 digits (no dash)
+        if len(ein) == 9:
+            ein = f"{ein[:2]}-{ein[2:]}"
+
+        extracted["employer_ein"] = ein
+        
     return extracted
