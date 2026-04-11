@@ -1,0 +1,14 @@
+.git
+.github
+.pytest_cache
+.coverage
+__pycache__
+*.py[cod]
+venv
+.env
+audit_log.txt
+processed_results.json
+temp_uploads
+test_document.pdf
+docs/architecture/*.png
+

@@ -13,6 +13,13 @@ clients/
 tmp/
 temp_uploads/
 audit_log.txt
+processed_results.json
+.codex
 
 # OS stuff
 .DS_Store
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/

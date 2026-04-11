@@ -1,0 +1,36 @@
+from __future__ import annotations
+
+
+class ApplicationError(Exception):
+    status_code = 500
+    error_code = "application_error"
+    detail = "Application error"
+
+    def __init__(self, detail: str | None = None):
+        self.detail = detail or self.detail
+        super().__init__(self.detail)
+
+
+class InvalidUploadError(ApplicationError):
+    status_code = 400
+    error_code = "invalid_upload"
+    detail = "The uploaded file is invalid."
+
+
+class UnsupportedDocumentError(ApplicationError):
+    status_code = 422
+    error_code = "unsupported_document"
+    detail = "The uploaded document is not supported."
+
+
+class ExternalServiceError(ApplicationError):
+    status_code = 502
+    error_code = "external_service_error"
+    detail = "An upstream dependency failed."
+
+
+class StorageError(ApplicationError):
+    status_code = 502
+    error_code = "storage_error"
+    detail = "Document storage failed."
+

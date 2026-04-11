@@ -1,53 +1,45 @@
+from __future__ import annotations
+
 import re
 
-def classify_document(text):
-    text = text.lower()
-    if "w-2" in text:
+
+def classify_document_text(text: str) -> str:
+    lowered_text = text.lower()
+    if "w-2" in lowered_text:
         return "W2"
-    elif "1099" in text:
+    if "1099" in lowered_text:
         return "1099"
-    elif "schedule c" in text:
+    if "schedule c" in lowered_text:
         return "Schedule C"
     return "Unknown"
 
-def extract_basic_fields(text):
-    data = {}
-    # SSN pattern
+
+def extract_basic_fields(text: str) -> dict[str, str]:
+    data: dict[str, str] = {}
+
     ssn_match = re.search(r"\d{3}-\d{2}-\d{4}", text)
     if ssn_match:
         data["ssn"] = ssn_match.group()
 
-    # Income match - using the fix we discussed for your tax project
-    income_match = re.search(r"\$?\d{1,3}(?:,\d{3})*", text)
+    income_match = re.search(r"\$?\d{1,3}(?:,\d{3})*(?:\.\d{2})?", text)
     if income_match:
         data["income"] = income_match.group()
+
     return data
 
-def process_document(file_bytes, raw_text_data):
 
+def process_document(_file_bytes: bytes, raw_text_data: dict) -> dict[str, object]:
     if not raw_text_data or "Blocks" not in raw_text_data:
-        print("[ERROR] Parser received empty Textract data")
         return {"document_type": "Unknown", "extracted_fields": {}}
-    
+
     blocks = raw_text_data.get("Blocks", [])
-
-    full_text = ""
-    # Use .get() to avoid crashing if Blocks is missing
-    for block in blocks:
-        if block["BlockType"] == "WORD":
-            full_text += block["Text"] + " "
-
-    # 1. Convert Textract blocks into a single string for your regex/logic
-    full_text = ""
-    for block in blocks:
-        if block["BlockType"] == "WORD":
-            full_text += block["Text"] + " "
-    
-    # 2. Use your existing logic on the extracted text
-    doc_type = classify_document(full_text)
-    fields = extract_basic_fields(full_text)
+    full_text = " ".join(
+        block.get("Text", "")
+        for block in blocks
+        if block.get("BlockType") == "WORD"
+    )
 
     return {
-        "document_type": doc_type,
-        "extracted_fields": fields
+        "document_type": classify_document_text(full_text),
+        "extracted_fields": extract_basic_fields(full_text),
     }
