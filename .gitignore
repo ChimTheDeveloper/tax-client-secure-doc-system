@@ -23,3 +23,5 @@ processed_results.json
 .pytest_cache/
 .coverage
 htmlcov/
+data/*.db
+data/*.sqlite3

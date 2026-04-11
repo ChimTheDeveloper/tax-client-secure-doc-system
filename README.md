@@ -19,6 +19,9 @@ Recommended environment variables:
 - `TAX_APP_S3_BUCKET`
 - `TAX_APP_AWS_REGION`
 - `TAX_APP_MIN_CONFIDENCE_SCORE`
+- `TAX_APP_ENABLE_AUTH`
+- `TAX_APP_API_KEYS`
+- `TAX_APP_DATABASE_PATH`
 - `TAX_APP_ENABLE_LOCAL_AUDIT_LOG`
 - `TAX_APP_ENABLE_LOCAL_RESULT_STORAGE`
 
@@ -52,6 +55,9 @@ pytest -q
 docker build -t tax-python-app .
 docker run --env-file .env -p 8000:8000 tax-python-app
 
+# Example authenticated request
+curl -H "X-API-Key: your-api-key" http://localhost:8000/documents
+
 ---
 
 ## Current Features
@@ -61,6 +67,7 @@ docker run --env-file .env -p 8000:8000 tax-python-app
 - Document Classification: Automatically identifies document types (W-2 supported).
 - Typed FastAPI Contracts: Upload and health endpoints return validated response models.
 - Environment-Driven Configuration: Bucket, region, confidence thresholds, and local persistence are configurable without code edits.
+- Authenticated API Access: Protected endpoints require an API key via `X-API-Key` or `Authorization: Bearer`.
 - Multi-Pass Extraction Engine:
   - KEY_VALUE extraction (primary)
   - LINE-based fallback
@@ -69,6 +76,7 @@ docker run --env-file .env -p 8000:8000 tax-python-app
 - Validation Layer: Separates invalid inputs from low-confidence-but-reviewable documents.
 - Normalization Layer: Converts extracted values into clean, usable formats.
 - Manual Review Routing: Low-confidence extractions are returned as `needs_review` instead of being silently discarded.
+- Durable Review Queue: Processed documents are stored in SQLite with review state, notes, and timestamps.
 - Health Check Endpoint: `/health` supports uptime checks and deployment probes.
 - Audit Logging (Optional Local): Local audit logging is available for development but disabled by default.
 - Modular Backend Structure: Clear separation between ingestion, processing, and storage.
@@ -101,16 +109,18 @@ This system enforces strict validation rules:
 User --> FastAPI Ingestion --> AWS Textract --> Processing Pipeline --> AWS S3 --> Audit Logging
 
 1. User provides a file via POST request  
-2. System converts file to memory-resident byte stream  
-3. API validates file extension, file size, and PDF signature before AWS calls  
-4. Bytes are sent directly to Amazon Textract for OCR and form analysis  
-5. Document is classified (W-2 detection)  
-6. Multi-pass extraction is applied (KEY_VALUE → LINE → REGEX)  
-7. Extracted data is validated  
-8. Weighted confidence scoring determines `success` vs `needs_review`  
-9. Data is normalized into structured format  
-10. File is uploaded to AWS S3 via boto3  
-11. Optional local metadata is written only when explicitly enabled  
+2. API authenticates the caller before allowing protected operations  
+3. System converts file to memory-resident byte stream  
+4. API validates file extension, file size, and PDF signature before AWS calls  
+5. Bytes are sent directly to Amazon Textract for OCR and form analysis  
+6. Document is classified (W-2 detection)  
+7. Multi-pass extraction is applied (KEY_VALUE → LINE → REGEX)  
+8. Extracted data is validated  
+9. Weighted confidence scoring determines `success` vs `needs_review`  
+10. Data is normalized into structured format  
+11. File is uploaded to AWS S3 via boto3  
+12. A durable document record is written to SQLite with review status and audit metadata  
+13. Optional local metadata is written only when explicitly enabled  
 
 ---
 
@@ -161,6 +171,15 @@ Implementation:
 - Dockerfile included for containerized deployment
 - GitHub Actions CI workflow runs the automated test suite on pushes and pull requests
 - `.env.example` documents runtime configuration
+
+---
+
+## Review Workflow
+
+- `GET /documents` lists stored processing records
+- `GET /documents/{document_id}` returns a specific record
+- `PATCH /documents/{document_id}/review` records an approve/reject decision with reviewer notes
+- Low-confidence uploads start as `review_status = pending`
 
 ---
 

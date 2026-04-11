@@ -165,7 +165,40 @@ The tests currently mock the processing pipeline for route-level validation. Tha
 
 This sequencing is useful because it locks down the outer contract first, which gives the rest of the refactor a safe shell.
 
-## 10. What Still Needs to Happen
+## 10. Why Add API Authentication Before User Accounts
+
+The new review and document-list endpoints expose sensitive tax-processing data, so leaving them open would weaken the entire system.
+
+Instead of jumping straight to a full user-account system, the current version adds authenticated API access using environment-managed API keys.
+
+That decision was intentional:
+
+1. It creates an immediate security boundary around sensitive routes.
+2. It works well for internal tools and service-to-service access.
+3. It keeps the auth layer understandable while the rest of the product matures.
+
+This is not the final auth model. It is the first production-minded control layer. JWT-based auth and role-aware user management can build on top of it later.
+
+## 11. Why Add Durable Document Persistence
+
+Before this change, the API behaved like a one-shot processing endpoint: upload a file, get a response, and lose the operational context unless you captured it somewhere else.
+
+That is fine for a prototype, but not for a review workflow.
+
+The new document repository stores:
+
+- upload metadata
+- normalized extraction output
+- confidence and warning details
+- review status
+- reviewer notes
+- created and updated timestamps
+
+This turns the system into an actual workflow backend instead of a transient processing demo.
+
+SQLite is used as the first persistence layer because it is built into Python, easy to test, and simple to explain. The long-term path can still evolve toward PostgreSQL or DynamoDB depending on the deployment model.
+
+## 12. What Still Needs to Happen
 
 This refactor makes the project stronger, but it does not make the app magically complete.
 
