@@ -35,6 +35,12 @@ class NotFoundError(ApplicationError):
     detail = "The requested resource was not found."
 
 
+class ConflictError(ApplicationError):
+    status_code = 409
+    error_code = "conflict"
+    detail = "The requested operation conflicts with the current resource state."
+
+
 class UnsupportedDocumentError(ApplicationError):
     status_code = 422
     error_code = "unsupported_document"

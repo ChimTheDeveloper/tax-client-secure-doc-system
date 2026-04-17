@@ -22,6 +22,7 @@ Recommended environment variables:
 - `TAX_APP_ENABLE_AUTH`
 - `TAX_APP_API_KEYS`
 - `TAX_APP_DATABASE_PATH`
+- `TAX_APP_LOG_LEVEL`
 - `TAX_APP_ENABLE_LOCAL_AUDIT_LOG`
 - `TAX_APP_ENABLE_LOCAL_RESULT_STORAGE`
 
@@ -58,6 +59,9 @@ docker run --env-file .env -p 8000:8000 tax-python-app
 # Example authenticated request
 curl -H "X-API-Key: your-api-key" http://localhost:8000/documents
 
+# Example local-dev mode with auth disabled
+TAX_APP_ENABLE_AUTH=false uvicorn src.api.main:app --reload
+
 ---
 
 ## Current Features
@@ -78,6 +82,9 @@ curl -H "X-API-Key: your-api-key" http://localhost:8000/documents
 - Manual Review Routing: Low-confidence extractions are returned as `needs_review` instead of being silently discarded.
 - Durable Review Queue: Processed documents are stored in SQLite with review state, notes, and timestamps.
 - Health Check Endpoint: `/health` supports uptime checks and deployment probes.
+- Readiness Endpoint: `/ready` reports dependency and configuration state for deploy checks.
+- Request Tracing: Each response includes `X-Request-ID`, and request logs capture timing and route information.
+- Review Dashboard Data: `/documents/summary` exposes counts for pending, approved, rejected, and auto-processed documents.
 - Audit Logging (Optional Local): Local audit logging is available for development but disabled by default.
 - Modular Backend Structure: Clear separation between ingestion, processing, and storage.
 
@@ -163,6 +170,7 @@ Implementation:
 - Objects stored directly from memory to S3 bucket  
 - No local disk persistence by default  
 - IAM-restricted access  
+- SQLite-backed document metadata persists reviewable state and supports local and early-stage deployment
 
 ---
 
@@ -177,9 +185,12 @@ Implementation:
 ## Review Workflow
 
 - `GET /documents` lists stored processing records
+- `GET /documents?review_status=pending&search=sample` filters the review queue
+- `GET /documents/summary` returns dashboard-style review and document counts
 - `GET /documents/{document_id}` returns a specific record
 - `PATCH /documents/{document_id}/review` records an approve/reject decision with reviewer notes
 - Low-confidence uploads start as `review_status = pending`
+- Documents that do not require manual review cannot be reviewed later, preventing invalid state transitions
 
 ---
 

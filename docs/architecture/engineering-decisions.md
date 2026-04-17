@@ -198,7 +198,35 @@ This turns the system into an actual workflow backend instead of a transient pro
 
 SQLite is used as the first persistence layer because it is built into Python, easy to test, and simple to explain. The long-term path can still evolve toward PostgreSQL or DynamoDB depending on the deployment model.
 
-## 12. What Still Needs to Happen
+## 12. Why Add Readiness Checks and Request Tracing
+
+Once the service had authentication, persistence, and multiple workflow endpoints, it needed basic operational visibility.
+
+Two additions address that:
+
+- `/ready` reports whether core dependencies and configuration are in a healthy state
+- each request now carries a request ID and emits structured timing logs
+
+These are small changes, but they matter in production:
+
+1. Readiness checks help deployment platforms decide when the app is safe to receive traffic.
+2. Request IDs make it possible to follow one request across logs, bug reports, and support incidents.
+3. Timing information helps surface slow routes before they become reliability issues.
+
+This is part of the transition from "working backend" to "operable service."
+
+## 13. Why Add Summary and Filter Endpoints
+
+An internal review tool needs more than record storage. Operators need a way to answer questions like:
+
+- How many documents are waiting for review?
+- Which uploads failed confidence checks?
+- Which document types are most common?
+- Can I search for one upload by name?
+
+The summary and filtered list endpoints support those needs without requiring a frontend first. That makes the backend immediately more useful and more marketable because it exposes the beginnings of a real document-operations platform.
+
+## 14. What Still Needs to Happen
 
 This refactor makes the project stronger, but it does not make the app magically complete.
 

@@ -22,6 +22,17 @@ class HealthResponse(BaseModel):
     status: str = "ok"
 
 
+class DependencyHealth(BaseModel):
+    name: str
+    status: str
+    detail: str | None = None
+
+
+class ReadinessResponse(BaseModel):
+    status: str
+    dependencies: list[DependencyHealth] = Field(default_factory=list)
+
+
 class UploadUrlResponse(BaseModel):
     upload_url: str
     filename: str
@@ -54,6 +65,16 @@ class UploadDocumentResponse(DocumentRecordResponse):
 
 class DocumentListResponse(BaseModel):
     documents: list[DocumentRecordResponse] = Field(default_factory=list)
+
+
+class DocumentSummaryResponse(BaseModel):
+    total_documents: int
+    pending_review: int
+    approved_review: int
+    rejected_review: int
+    auto_processed: int
+    needs_review: int
+    by_document_type: dict[str, int] = Field(default_factory=dict)
 
 
 class ReviewDecision(str, Enum):

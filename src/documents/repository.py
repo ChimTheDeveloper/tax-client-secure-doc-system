@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from src.processing.exceptions import NotFoundError
+from src.processing.exceptions import ConflictError, NotFoundError
 
 
 def _utc_now_iso() -> str:
@@ -137,15 +137,35 @@ class DocumentRepository:
         self,
         *,
         review_status: str | None = None,
+        processing_status: str | None = None,
+        document_type: str | None = None,
+        search: str | None = None,
         limit: int = 50,
         offset: int = 0,
     ) -> list[dict[str, Any]]:
         query = "SELECT * FROM documents"
         params: list[Any] = []
+        where_clauses: list[str] = []
 
         if review_status:
-            query += " WHERE review_status = ?"
+            where_clauses.append("review_status = ?")
             params.append(review_status)
+
+        if processing_status:
+            where_clauses.append("status = ?")
+            params.append(processing_status)
+
+        if document_type:
+            where_clauses.append("document_type = ?")
+            params.append(document_type)
+
+        if search:
+            where_clauses.append("(original_filename LIKE ? OR file_name LIKE ? OR document_id LIKE ?)")
+            search_value = f"%{search}%"
+            params.extend([search_value, search_value, search_value])
+
+        if where_clauses:
+            query += " WHERE " + " AND ".join(where_clauses)
 
         query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
         params.extend([limit, offset])
@@ -165,6 +185,16 @@ class DocumentRepository:
     ) -> dict[str, Any]:
         existing = self.get_document_record(document_id)
         reviewed_at = _utc_now_iso()
+
+        if not existing["requires_manual_review"]:
+            raise ConflictError(
+                "This document does not require manual review and cannot be reviewed."
+            )
+
+        if existing["review_status"] not in {"pending", "rejected"}:
+            raise ConflictError(
+                f"Document review is already finalized as '{existing['review_status']}'."
+            )
 
         with self._connect() as connection:
             connection.execute(
@@ -191,6 +221,48 @@ class DocumentRepository:
         updated = self.get_document_record(document_id)
         updated["status"] = existing["status"]
         return updated
+
+    def get_summary(self) -> dict[str, Any]:
+        with self._connect() as connection:
+            totals = connection.execute(
+                """
+                SELECT
+                    COUNT(*) AS total_documents,
+                    SUM(CASE WHEN review_status = 'pending' THEN 1 ELSE 0 END) AS pending_review,
+                    SUM(CASE WHEN review_status = 'approved' THEN 1 ELSE 0 END) AS approved_review,
+                    SUM(CASE WHEN review_status = 'rejected' THEN 1 ELSE 0 END) AS rejected_review,
+                    SUM(CASE WHEN review_status = 'not_required' THEN 1 ELSE 0 END) AS auto_processed,
+                    SUM(CASE WHEN status = 'needs_review' THEN 1 ELSE 0 END) AS needs_review
+                FROM documents
+                """
+            ).fetchone()
+
+            type_rows = connection.execute(
+                """
+                SELECT document_type, COUNT(*) AS count
+                FROM documents
+                GROUP BY document_type
+                ORDER BY document_type ASC
+                """
+            ).fetchall()
+
+        return {
+            "total_documents": totals["total_documents"] or 0,
+            "pending_review": totals["pending_review"] or 0,
+            "approved_review": totals["approved_review"] or 0,
+            "rejected_review": totals["rejected_review"] or 0,
+            "auto_processed": totals["auto_processed"] or 0,
+            "needs_review": totals["needs_review"] or 0,
+            "by_document_type": {
+                row["document_type"]: row["count"]
+                for row in type_rows
+            },
+        }
+
+    def check_connection(self) -> bool:
+        with self._connect() as connection:
+            connection.execute("SELECT 1").fetchone()
+        return True
 
     def _row_to_record(self, row: sqlite3.Row) -> dict[str, Any]:
         return {
