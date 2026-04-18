@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block content %}
+<main id="main" class="dashboard-shell">
+    <!-- Header (shared) -->
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Tax Intelligence Workspace</p>
+            <h1>{{ subject.display_name or subject.email or "Workspace" }}</h1>
+            <p class="muted">
+                <strong>Role:</strong> <span class="badge badge-warning">Reviewer</span>
+                {% if subject.email %}<br>{{ subject.email }}{% endif %}
+            </p>
+        </div>
+        <nav class="topbar-nav">
+            <a href="/app" class="button button-secondary">Dashboard</a>
+            <a href="/app/review-queue" class="button button-secondary">Review Queue</a>
+        </nav>
+        <form action="/auth/logout" method="post" style="display: flex; gap: 8px;">
+            <button type="submit" class="button-secondary">Log Out</button>
+        </form>
+        <button class="hamburger" aria-label="Toggle navigation menu" aria-expanded="false">
+            <span></span><span></span><span></span>
+        </button>
+    </header>
+
+    <!-- Mobile Navigation Menu -->
+    <nav class="mobile-nav" aria-hidden="true">
+        <a href="/app">Dashboard</a>
+        <a href="/app/review-queue">Review Queue</a>
+        <a href="#">Settings</a>
+        <form action="/auth/logout" method="post" style="display: block;">
+            <button type="submit" style="background: transparent; color: var(--ink); border: none; padding: var(--spacing-md); width: 100%; text-align: left; cursor: pointer; font-weight: var(--font-weight-medium);">Log Out</button>
+        </form>
+    </nav>
+
+    <!-- Alerts -->
+    {% if notice %}
+    <div class="alert alert-success" role="alert">
+        <strong>Success:</strong> {{ notice }}
+    </div>
+    {% endif %}
+
+    <!-- Quick Stats (Reviewer-specific) -->
+    <section class="summary-grid">
+        <article class="stat-card">
+            <span>Ready for Review</span>
+            <strong>{{ summary.pending_review }}</strong>
+            <small class="muted">awaiting your decision</small>
+        </article>
+        <article class="stat-card stat-card-highlight">
+            <span>Completed This Week</span>
+            <strong>{{ summary.approved_review|default('0') }}</strong>
+            <small class="muted">documents reviewed</small>
+        </article>
+        <article class="stat-card">
+            <span>Total Processed</span>
+            <strong>{{ summary.total_documents }}</strong>
+            <small class="muted">all documents</small>
+        </article>
+    </section>
+
+    <!-- Quick Action: Go to Review Queue -->
+    <section class="card">
+        <div class="card-header">
+            <h2>Review Queue</h2>
+            <p class="muted">Documents sorted by confidence (lowest first for priority).</p>
+        </div>
+        
+        {% if summary.pending_review|default(0) > 0 %}
+        <p style="margin-bottom: var(--spacing-lg);">
+            <strong>{{ summary.pending_review }} document{{ 's' if summary.pending_review > 1 else '' }} waiting</strong> for your review. 
+            <a href="/app/review-queue" class="button button-primary" style="margin-left: var(--spacing-md);">Open Review Queue →</a>
+        </p>
+        {% else %}
+        <div class="empty-state">
+            <p><strong>All caught up!</strong></p>
+            <p class="muted">No documents waiting for review. Check back later.</p>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Recent Review Activity -->
+    <section class="card">
+        <h2>Your Recent Reviews</h2>
+        {% if documents %}
+        <div class="table-wrap">
+            <table>
+                <caption class="sr-only">Your recently reviewed documents</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Document</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Confidence</th>
+                        <th scope="col">Reviewed</th>
+                        <th scope="col">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for document in documents %}
+                    <tr>
+                        <td><strong>{{ document.original_filename }}</strong></td>
+                        <td>
+                            {% if document.review_status == 'approved' %}
+                                <span class="badge badge-success" aria-label="Status: Approved">Approved</span>
+                            {% elif document.review_status == 'rejected' %}
+                                <span class="badge badge-error" aria-label="Status: Rejected">Rejected</span>
+                            {% else %}
+                                <span class="badge badge-warning" aria-label="Status: Needs Review">Needs Review</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set conf = document.confidence | float %}
+                            {% if conf >= 80 %}
+                                <span class="confidence-score high" aria-label="High confidence">{{ '%.0f'|format(conf) }}%</span>
+                            {% elif conf >= 60 %}
+                                <span class="confidence-score medium" aria-label="Medium confidence">{{ '%.0f'|format(conf) }}%</span>
+                            {% else %}
+                                <span class="confidence-score low" aria-label="Low confidence">{{ '%.0f'|format(conf) }}%</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ document.reviewed_at.strftime('%b %d, %Y') if document.reviewed_at else 'Pending' }}</td>
+                        <td>
+                            <button class="button-small button-secondary" aria-label="Review details for {{ document.original_filename }}">Expand</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p><strong>No reviews yet.</strong></p>
+            <p class="muted">Documents will appear here after you review them.</p>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Review Guidelines Card -->
+    <section class="card">
+        <h2>Review Guidelines</h2>
+        <ul style="line-height: 1.8; color: var(--ink);">
+            <li><strong>High Confidence (≥80%):</strong> Usually safe to approve. Spot-check key fields.</li>
+            <li><strong>Medium Confidence (60–79%):</strong> Review carefully. Check extracted fields against original.</li>
+            <li><strong>Low Confidence (&lt;60%):</strong> Manual review required. Verify all fields before approval.</li>
+            <li><strong>Rejected documents:</strong> Provide notes explaining what was incorrect so uploaders can resubmit.</li>
+        </ul>
+    </section>
+</main>
+{% endblock %}

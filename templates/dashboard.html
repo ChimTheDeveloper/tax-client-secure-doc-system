@@ -1,27 +1,31 @@
 {% extends "base.html" %}
 
 {% block content %}
-<main class="dashboard-shell">
+<main id="main" class="dashboard-shell">
     <header class="topbar">
         <div>
             <p class="eyebrow">Tax Intelligence Workspace</p>
             <h1>{{ subject.display_name or subject.email or "Workspace" }}</h1>
             <p class="muted">
-                Role: <strong>{{ subject.role }}</strong>
-                {% if subject.email %} | {{ subject.email }}{% endif %}
+                <strong>Role:</strong> <span class="badge badge-info">{{ subject.role }}</span>
+                {% if subject.email %}<br>{{ subject.email }}{% endif %}
             </p>
         </div>
-        <form action="/auth/logout" method="post">
+        <form action="/auth/logout" method="post" style="display: flex; gap: 8px;">
             <button type="submit" class="button-secondary">Log Out</button>
         </form>
     </header>
 
     {% if notice %}
-    <div class="alert alert-success">{{ notice }}</div>
+    <div class="alert alert-success" role="alert">
+        <strong>Success:</strong> {{ notice }}
+    </div>
     {% endif %}
 
     {% if uploaded_document_id %}
-    <div class="alert alert-info">Latest upload document ID: {{ uploaded_document_id }}</div>
+    <div class="alert alert-info" role="alert">
+        <strong>Document uploaded:</strong> ID {{ uploaded_document_id }}
+    </div>
     {% endif %}
 
     <section class="summary-grid">
@@ -33,7 +37,7 @@
             <span>Pending Review</span>
             <strong>{{ summary.pending_review }}</strong>
         </article>
-        <article class="stat-card">
+        <article class="stat-card stat-card-highlight">
             <span>Approved</span>
             <strong>{{ summary.approved_review }}</strong>
         </article>
@@ -46,11 +50,18 @@
     <section class="panel-grid">
         <section class="card">
             <h2>Upload Document</h2>
-            <p class="muted">Send a PDF through the same production pipeline used by the API.</p>
+            <p class="muted">Send a PDF through the production pipeline.</p>
             <form action="/app/upload" method="post" enctype="multipart/form-data" class="form-stack">
                 <label>
-                    <span>Tax Document PDF</span>
-                    <input type="file" name="file" accept="application/pdf" required>
+                    <span>Tax Document (PDF)</span>
+                    <input 
+                        type="file" 
+                        name="file" 
+                        accept="application/pdf" 
+                        required
+                        aria-label="Select PDF document to upload"
+                    >
+                    <small class="form-hint">Supported: PDF documents, max 10MB</small>
                 </label>
                 <button type="submit" class="button-primary">Upload and Process</button>
             </form>
@@ -59,19 +70,20 @@
         {% if can_invite %}
         <section class="card">
             <h2>Invite User</h2>
-            <p class="muted">Provision secure local accounts by role while we keep the future Google sign-in path open.</p>
+            <p class="muted">Provision accounts by role. Admin access only.</p>
             <form action="/app/invites" method="post" class="form-stack">
                 <label>
                     <span>Full Name</span>
-                    <input type="text" name="full_name" required>
+                    <input type="text" name="full_name" required aria-label="User full name">
                 </label>
                 <label>
-                    <span>Email</span>
-                    <input type="email" name="email" required>
+                    <span>Email Address</span>
+                    <input type="email" name="email" required aria-label="User email">
                 </label>
                 <label>
                     <span>Role</span>
-                    <select name="role" required>
+                    <select name="role" required aria-label="User role">
+                        <option value="">-- Select role --</option>
                         <option value="reviewer">Reviewer</option>
                         <option value="uploader">Uploader</option>
                         <option value="admin">Admin</option>
@@ -87,55 +99,85 @@
         <div class="section-header">
             <div>
                 <h2>Recent Documents</h2>
-                <p class="muted">Low-confidence documents remain in the queue until a reviewer resolves them.</p>
+                <p class="muted">Documents with low confidence flagged for manual review.</p>
             </div>
         </div>
 
+        {% if documents %}
         <div class="table-wrap">
             <table>
+                <caption class="sr-only">Recent documents and processing status</caption>
                 <thead>
                     <tr>
-                        <th>Filename</th>
-                        <th>Status</th>
-                        <th>Review</th>
-                        <th>Confidence</th>
-                        <th>Submitted By</th>
-                        <th>Actions</th>
+                        <th scope="col">Document</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Confidence</th>
+                        <th scope="col">Submitted</th>
+                        <th scope="col">Submitted By</th>
+                        <th scope="col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for document in documents %}
                     <tr>
-                        <td>{{ document.original_filename }}</td>
-                        <td>{{ document.status }}</td>
-                        <td>{{ document.review_status }}</td>
-                        <td>{{ '%.2f'|format(document.confidence) }}</td>
-                        <td>{{ document.submitted_by }}</td>
+                        <td><strong>{{ document.original_filename }}</strong></td>
+                        <td>
+                            {% if document.review_status == 'pending' %}
+                                <span class="badge badge-warning" aria-label="Status: Needs review">Needs Review</span>
+                            {% elif document.review_status == 'approved' %}
+                                <span class="badge badge-success" aria-label="Status: Approved">Approved</span>
+                            {% elif document.review_status == 'rejected' %}
+                                <span class="badge badge-error" aria-label="Status: Rejected">Rejected</span>
+                            {% else %}
+                                <span class="badge badge-neutral">{{ document.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set conf = document.confidence | float %}
+                            {% if conf >= 80 %}
+                                <span class="confidence-score high" aria-label="High confidence">{{ '%.0f'|format(conf) }}%</span>
+                            {% elif conf >= 60 %}
+                                <span class="confidence-score medium" aria-label="Medium confidence">{{ '%.0f'|format(conf) }}%</span>
+                            {% else %}
+                                <span class="confidence-score low" aria-label="Low confidence">{{ '%.0f'|format(conf) }}%</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ document.created_at.strftime('%b %d, %Y') if document.created_at else 'N/A' }}</td>
+                        <td>{{ document.submitted_by or 'Unknown' }}</td>
                         <td>
                             {% if can_review and document.review_status == 'pending' %}
                             <form action="/app/documents/{{ document.document_id }}/review" method="post" class="inline-review-form">
                                 <input type="hidden" name="decision" value="approved">
-                                <input type="text" name="reviewer_notes" placeholder="Reviewer note">
-                                <button type="submit" class="button-small">Approve</button>
+                                <button 
+                                    type="submit" 
+                                    class="button-small button-primary"
+                                    aria-label="Approve {{ document.original_filename }}"
+                                >Approve</button>
                             </form>
                             <form action="/app/documents/{{ document.document_id }}/review" method="post" class="inline-review-form">
                                 <input type="hidden" name="decision" value="rejected">
-                                <input type="text" name="reviewer_notes" placeholder="Reason for rejection">
-                                <button type="submit" class="button-small button-ghost">Reject</button>
+                                <button 
+                                    type="submit" 
+                                    class="button-small button-danger"
+                                    aria-label="Reject {{ document.original_filename }}"
+                                >Reject</button>
                             </form>
                             {% else %}
-                            <span class="muted">No action required</span>
+                            <span class="muted">✓</span>
                             {% endif %}
                         </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="6" class="empty-state">No documents yet. Upload your first PDF to start the workflow.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+        {% else %}
+        <div class="empty-state">
+            <p><strong>No documents yet.</strong></p>
+            <p class="muted">Upload your first tax document to start the workflow.</p>
+            <button type="button" class="button-primary" onclick="document.querySelector('input[type=file]')?.click()">Upload Document</button>
+        </div>
+        {% endif %}
     </section>
 
     {% if can_invite %}

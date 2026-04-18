@@ -286,9 +286,18 @@ def create_app() -> FastAPI:
         )
         users = _get_auth_repository(request).list_users() if subject.role == ROLE_ADMIN else []
 
+        # Phase 3: Role-based dashboard templates
+        template_name = "dashboard.html"  # default fallback
+        if subject.role == ROLE_ADMIN:
+            template_name = "dashboard-admin.html"
+        elif subject.role == ROLE_REVIEWER:
+            template_name = "dashboard-reviewer.html"
+        elif subject.role == ROLE_UPLOADER:
+            template_name = "dashboard-uploader.html"
+
         return _render_template(
             request,
-            "dashboard.html",
+            template_name,
             {
                 "page_title": "Dashboard",
                 "subject": subject,
@@ -300,6 +309,37 @@ def create_app() -> FastAPI:
                 "can_invite": subject.role == ROLE_ADMIN,
                 "notice": request.query_params.get("notice"),
                 "uploaded_document_id": request.query_params.get("uploaded"),
+            },
+        )
+
+    @app.get("/app/review-queue", response_class=HTMLResponse, include_in_schema=False, response_model=None)
+    def app_review_queue(request: Request):
+        subject = _get_optional_subject(request)
+        if not subject:
+            return RedirectResponse(url="/login", status_code=status.HTTP_302_FOUND)
+        
+        if subject.role not in {ROLE_ADMIN, ROLE_REVIEWER}:
+            return RedirectResponse(url="/app", status_code=status.HTTP_302_FOUND)
+
+        document_repository = _get_document_repository(request)
+        # Get documents pending review, sorted by confidence (lowest first for priority)
+        # Note: Database doesn't yet support ordering, so we'll get records and sort in Python
+        documents = document_repository.list_document_records(
+            review_status="pending",  # Only documents awaiting review
+            limit=50,
+        )
+        
+        # Sort by confidence ascending (lowest confidence first for priority review)
+        documents = sorted(documents, key=lambda d: float(d.get('confidence', 100)))
+
+        return _render_template(
+            request,
+            "review-queue.html",
+            {
+                "page_title": "Review Queue",
+                "subject": subject,
+                "documents": documents,
+                "notice": request.query_params.get("notice"),
             },
         )
 

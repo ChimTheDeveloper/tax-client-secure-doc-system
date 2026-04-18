@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block content %}
+<main id="main" class="dashboard-shell">
+    <!-- Header (shared) -->
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Tax Intelligence Workspace — Administration</p>
+            <h1>{{ subject.display_name or subject.email or "Admin" }}</h1>
+            <p class="muted">
+                <strong>Role:</strong> <span class="badge badge-error">Admin</span>
+                {% if subject.email %}<br>{{ subject.email }}{% endif %}
+            </p>
+        </div>
+        <nav class="topbar-nav">
+            <a href="/app" class="button button-secondary">Dashboard</a>
+            <a href="/app/review-queue" class="button button-secondary">Review Queue</a>
+        </nav>
+        <form action="/auth/logout" method="post" style="display: flex; gap: 8px;">
+            <button type="submit" class="button-secondary">Log Out</button>
+        </form>
+        <button class="hamburger" aria-label="Toggle navigation menu" aria-expanded="false">
+            <span></span><span></span><span></span>
+        </button>
+    </header>
+
+    <!-- Mobile Navigation Menu -->
+    <nav class="mobile-nav" aria-hidden="true">
+        <a href="/app">Dashboard</a>
+        <a href="/app/review-queue">Review Queue</a>
+        <a href="#">Settings</a>
+        <form action="/auth/logout" method="post" style="display: block;">
+            <button type="submit" style="background: transparent; color: var(--ink); border: none; padding: var(--spacing-md); width: 100%; text-align: left; cursor: pointer; font-weight: var(--font-weight-medium);">Log Out</button>
+        </form>
+    </nav>
+
+    <!-- Alerts -->
+    {% if notice %}
+    <div class="alert alert-success" role="alert">
+        <strong>Success:</strong> {{ notice }}
+    </div>
+    {% endif %}
+
+    <!-- System Health Overview -->
+    <section class="summary-grid">
+        <article class="stat-card">
+            <span>Total Documents</span>
+            <strong>{{ summary.total_documents }}</strong>
+            <small class="muted">all uploaded</small>
+        </article>
+        <article class="stat-card stat-card-highlight">
+            <span>Avg. Confidence</span>
+            <strong>{{ summary.avg_confidence|default('—') }}</strong>
+            <small class="muted">system accuracy</small>
+        </article>
+        <article class="stat-card">
+            <span>Ready for Review</span>
+            <strong>{{ summary.pending_review }}</strong>
+            <small class="muted">awaiting decision</small>
+        </article>
+        <article class="stat-card">
+            <span>Team Members</span>
+            <strong>{{ users|length }}</strong>
+            <small class="muted">active users</small>
+        </article>
+    </section>
+
+    <!-- Team Management Section -->
+    <section class="card">
+        <div class="card-header">
+            <h2>Team Management</h2>
+            <p class="muted">Manage user roles and team access.</p>
+        </div>
+
+        <!-- Invite New User Form -->
+        <div style="margin-bottom: var(--spacing-2xl); padding-bottom: var(--spacing-2xl); border-bottom: 1px solid var(--line);">
+            <h3 style="margin-bottom: var(--spacing-md);">Invite New Team Member</h3>
+            <form action="/app/invites" method="post" class="form-stack">
+                <div class="form-row">
+                    <label>
+                        <span>Email Address</span>
+                        <input type="email" name="email" required placeholder="user@example.com" />
+                    </label>
+                    <label>
+                        <span>Full Name</span>
+                        <input type="text" name="full_name" required placeholder="Jane Doe" />
+                    </label>
+                </div>
+                <label>
+                    <span>Role</span>
+                    <select name="role" required>
+                        <option value="">Select a role</option>
+                        <option value="uploader">Uploader (can upload documents)</option>
+                        <option value="reviewer">Reviewer (can review documents)</option>
+                        <option value="admin">Admin (full access)</option>
+                    </select>
+                </label>
+                <button type="submit" class="button-primary">Send Invite</button>
+            </form>
+        </div>
+
+        <!-- User List -->
+        {% if users %}
+        <div>
+            <h3 style="margin-bottom: var(--spacing-md);">Active Users</h3>
+            <div class="table-wrap">
+                <table>
+                    <caption class="sr-only">Team members and their roles</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">User</th>
+                            <th scope="col">Email</th>
+                            <th scope="col">Role</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Joined</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td><strong>{{ user.display_name or 'Unknown' }}</strong></td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                {% if user.role == 'admin' %}
+                                    <span class="badge badge-error">Admin</span>
+                                {% elif user.role == 'reviewer' %}
+                                    <span class="badge badge-warning">Reviewer</span>
+                                {% else %}
+                                    <span class="badge badge-info">Uploader</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge badge-success">Active</span>
+                            </td>
+                            <td>{{ user.created_at.strftime('%b %d, %Y') if user.created_at else 'N/A' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- System Configuration -->
+    <section class="card">
+        <h2>System Configuration</h2>
+        
+        <div style="display: grid; gap: var(--spacing-lg); margin-bottom: var(--spacing-lg);">
+            <div style="padding: var(--spacing-md); background: var(--panel); border-radius: var(--radius-md);">
+                <p><strong>Confidence Threshold:</strong> {{ settings.confidence_threshold|default('75%') }}</p>
+                <small class="muted">Documents below this confidence level are flagged for review.</small>
+            </div>
+            <div style="padding: var(--spacing-md); background: var(--panel); border-radius: var(--radius-md);">
+                <p><strong>Session Duration:</strong> {{ settings.session_duration_hours|default('8') }} hours</p>
+                <small class="muted">Maximum time before automatic logout.</small>
+            </div>
+            <div style="padding: var(--spacing-md); background: var(--panel); border-radius: var(--radius-md);">
+                <p><strong>Max Upload Size:</strong> {{ settings.max_upload_size|default('10') }} MB</p>
+                <small class="muted">Maximum file size per document upload.</small>
+            </div>
+        </div>
+
+        <button type="button" class="button-secondary" disabled style="opacity: 0.6;">Configuration Settings (Coming Soon)</button>
+    </section>
+
+    <!-- Audit Log Overview -->
+    <section class="card">
+        <h2>Recent Audit Log</h2>
+        <p class="muted" style="margin-bottom: var(--spacing-md);">Recent system activity and user actions.</p>
+        
+        <div class="timeline">
+            <div class="timeline-item">
+                <span class="timeline-date">Today, 2:30 PM</span>
+                <p><strong>Document reviewed</strong> — Admin approved "Annual Return 2024.pdf"</p>
+            </div>
+            <div class="timeline-item">
+                <span class="timeline-date">Today, 1:15 PM</span>
+                <p><strong>User invited</strong> — john.reviewer@company.com added as Reviewer</p>
+            </div>
+            <div class="timeline-item">
+                <span class="timeline-date">Yesterday, 4:45 PM</span>
+                <p><strong>Document uploaded</strong> — jane.uploader@company.com submitted "W-2 Form.pdf"</p>
+            </div>
+            <div class="timeline-item">
+                <span class="timeline-date">Yesterday, 10:00 AM</span>
+                <p><strong>System health</strong> — Average document confidence: 78%</p>
+            </div>
+        </div>
+
+        <a href="#" style="display: inline-block; margin-top: var(--spacing-lg);" class="button button-secondary">View Full Audit Log →</a>
+    </section>
+</main>
+{% endblock %}

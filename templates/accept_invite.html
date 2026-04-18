@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<main class="auth-layout invite-layout">
+<main id="main" class="auth-layout invite-layout">
     <section class="hero-panel">
         <p class="eyebrow">Invite-Only Onboarding</p>
         <h1>Activate your account.</h1>
@@ -10,30 +10,52 @@
             future managed sign-in options such as Google and broader email onboarding.
         </p>
         <div class="card invite-summary">
+            <h3 style="margin-top: 0;">Invite Details</h3>
             <p><strong>Name:</strong> {{ invite.full_name }}</p>
             <p><strong>Email:</strong> {{ invite.email }}</p>
-            <p><strong>Role:</strong> {{ invite.role }}</p>
+            <p><strong>Role:</strong> <span class="badge badge-info">{{ invite.role }}</span></p>
             <p><strong>Expires:</strong> {{ invite.expires_at }}</p>
         </div>
     </section>
 
     <section class="card auth-card">
         <h2>Set Password</h2>
-        <p class="muted">Choose a password with at least 10 characters.</p>
+        <p class="muted">Create a secure password with at least 10 characters.</p>
 
         {% if error_message %}
-        <div class="alert alert-error">{{ error_message }}</div>
+        <div class="alert alert-error" role="alert">
+            <strong>Error:</strong> {{ error_message }}
+        </div>
         {% endif %}
 
         <form action="/auth/accept-invite" method="post" class="form-stack">
             <input type="hidden" name="token" value="{{ token }}">
             <label>
                 <span>Password</span>
-                <input type="password" name="password" required>
+                <input 
+                    type="password" 
+                    name="password" 
+                    required
+                    minlength="10"
+                    aria-label="Password (minimum 10 characters)"
+                    aria-describedby="password-hint"
+                >
+                <small id="password-hint" class="form-hint">Must be at least 10 characters</small>
+                <!-- Phase 3: Password Strength Meter -->
+                <div class="password-strength">
+                    <progress value="0" max="100"></progress>
+                    <small>Password strength will appear as you type</small>
+                </div>
             </label>
             <label>
                 <span>Confirm Password</span>
-                <input type="password" name="confirm_password" required>
+                <input 
+                    type="password" 
+                    name="confirm_password" 
+                    required
+                    minlength="10"
+                    aria-label="Confirm password"
+                >
             </label>
             <button type="submit" class="button-primary">Create Account</button>
         </form>

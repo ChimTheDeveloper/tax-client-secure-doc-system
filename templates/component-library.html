@@ -1,0 +1,322 @@
+{% extends "base.html" %}
+
+{% block content %}
+<main class="dashboard-shell">
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Component Library Test</p>
+            <h1>Phase 2: Component Implementation</h1>
+        </div>
+    </header>
+
+    <!-- ============================================================
+         BUTTONS
+         ============================================================ -->
+    <section class="card">
+        <h2>Button Components</h2>
+        <div class="form-stack" style="margin-top: 20px;">
+            <div>
+                <p class="muted"><strong>Primary Button</strong> (Call-to-action)</p>
+                <button type="button" class="button-primary">Upload Document</button>
+            </div>
+
+            <div>
+                <p class="muted"><strong>Secondary Button</strong> (Alternate action)</p>
+                <button type="button" class="button-secondary">Cancel</button>
+            </div>
+
+            <div>
+                <p class="muted"><strong>Danger Button</strong> (Destructive)</p>
+                <button type="button" class="button-danger">Reject</button>
+            </div>
+
+            <div>
+                <p class="muted"><strong>Ghost Button</strong> (Low-emphasis)</p>
+                <button type="button" class="button-ghost">Learn More</button>
+            </div>
+
+            <div>
+                <p class="muted"><strong>Small Button</strong> (Compact)</p>
+                <button type="button" class="button-small button-primary">Save</button>
+            </div>
+
+            <div>
+                <p class="muted"><strong>Disabled State</strong></p>
+                <button type="button" class="button-primary" disabled>Processing...</button>
+            </div>
+
+            <div>
+                <p class="muted"><strong>Loading State</strong></p>
+                <button type="button" class="button-primary" aria-busy="true">
+                    <span class="spinner"></span> Processing...
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         FORM INPUTS
+         ============================================================ -->
+    <section class="card">
+        <h2>Form Input Components</h2>
+        <form class="form-stack" style="margin-top: 20px;">
+            <div>
+                <label>
+                    <span>Email Address (Default)</span>
+                    <input type="email" placeholder="name@firm.com">
+                </label>
+            </div>
+
+            <div>
+                <label>
+                    <span>Email Address (Focus)</span>
+                    <input type="email" placeholder="name@firm.com" autofocus>
+                </label>
+            </div>
+
+            <div>
+                <label aria-invalid="true">
+                    <span>Email Address (Error)</span>
+                    <input type="email" placeholder="name@firm.com" aria-invalid="true" value="invalid-email">
+                    <small class="form-error">Please enter a valid email address.</small>
+                </label>
+            </div>
+
+            <div>
+                <label>
+                    <span>Password (Disabled)</span>
+                    <input type="password" disabled value="auto-generated">
+                </label>
+            </div>
+
+            <div>
+                <label>
+                    <span>Role Assignment</span>
+                    <select name="role">
+                        <option value="">-- Select a role --</option>
+                        <option value="uploader">Uploader</option>
+                        <option value="reviewer">Reviewer</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </label>
+            </div>
+
+            <div>
+                <label>
+                    <span>Tax Document (Required)</span>
+                    <input type="file" accept=".pdf,.png,.jpg" required>
+                    <small class="form-hint">PDF or image format, max 10MB</small>
+                </label>
+            </div>
+        </form>
+    </section>
+
+    <!-- ============================================================
+         BADGES & STATUS INDICATORS
+         ============================================================ -->
+    <section class="card">
+        <h2>Badge & Status Indicators</h2>
+        <div class="form-stack" style="margin-top: 20px; gap: 12px;">
+            <div>
+                <p class="muted"><strong>Success Badge</strong></p>
+                <span class="badge badge-success" aria-label="Status: Approved">Approved</span>
+            </div>
+
+            <div>
+                <p class="muted"><strong>Warning Badge</strong></p>
+                <span class="badge badge-warning" aria-label="Status: Needs Review">Needs Review</span>
+            </div>
+
+            <div>
+                <p class="muted"><strong>Error Badge</strong></p>
+                <span class="badge badge-error" aria-label="Status: Rejected">Rejected</span>
+            </div>
+
+            <div>
+                <p class="muted"><strong>Info Badge (Role)</strong></p>
+                <span class="badge badge-info">Admin</span>
+            </div>
+
+            <div>
+                <p class="muted"><strong>Neutral Badge</strong></p>
+                <span class="badge badge-neutral">Draft</span>
+            </div>
+
+            <div>
+                <p class="muted"><strong>Confidence Score - High</strong></p>
+                <span class="confidence-score high" aria-label="High confidence: 95%">✓ 95%</span>
+            </div>
+
+            <div>
+                <p class="muted"><strong>Confidence Score - Medium</strong></p>
+                <span class="confidence-score medium" aria-label="Medium confidence: 68%">⚠ 68%</span>
+            </div>
+
+            <div>
+                <p class="muted"><strong>Confidence Score - Low</strong></p>
+                <span class="confidence-score low" aria-label="Low confidence: 42%">✗ 42%</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         ALERTS
+         ============================================================ -->
+    <section class="card">
+        <h2>Alert Components</h2>
+        <div class="form-stack" style="margin-top: 20px;">
+            <div>
+                <p class="muted"><strong>Success Alert</strong></p>
+                <div class="alert alert-success" role="alert">
+                    <strong>Upload successful!</strong> Document is processing. You'll see results in a moment.
+                </div>
+            </div>
+
+            <div>
+                <p class="muted"><strong>Error Alert</strong></p>
+                <div class="alert alert-error" role="alert">
+                    <strong>Upload failed:</strong> File size exceeds 10MB limit. Please try a smaller file.
+                </div>
+            </div>
+
+            <div>
+                <p class="muted"><strong>Info Alert</strong></p>
+                <div class="alert alert-info" role="alert">
+                    <strong>Notice:</strong> Your invite expires on April 24, 2026. Set your password now to activate your account.
+                </div>
+            </div>
+
+            <div>
+                <p class="muted"><strong>Warning Alert</strong></p>
+                <div class="alert alert-warning" role="alert">
+                    <strong>Low confidence extraction:</strong> 62% confidence. Manual review recommended.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         CARDS
+         ============================================================ -->
+    <section class="card">
+        <h2>Card Components</h2>
+
+        <h3 style="margin-top: 24px;">Basic Card</h3>
+        <div class="card" style="margin-top: 12px;">
+            <h3>Document Details</h3>
+            <p>This is a card with content inside. Cards are used to group related information and create visual separation.</p>
+        </div>
+
+        <h3 style="margin-top: 24px;">Elevated Card</h3>
+        <div class="card card-elevated" style="margin-top: 12px;">
+            <h3>Important Content</h3>
+            <p>This card has increased shadow for emphasis. Use for priority content or highlighted information.</p>
+        </div>
+
+        <h3 style="margin-top: 24px;">Card with Header & Footer</h3>
+        <div class="card" style="margin-top: 12px;">
+            <div class="card-header">
+                <h3>User Profile</h3>
+            </div>
+            <div class="card-body">
+                <p><strong>Name:</strong> Jane Reviewer</p>
+                <p><strong>Role:</strong> Reviewer</p>
+                <p><strong>Email:</strong> jane@firm.com</p>
+            </div>
+            <div class="card-footer">
+                <button type="button" class="button-primary" style="width: auto;">Edit</button>
+                <button type="button" class="button-secondary" style="width: auto;">Cancel</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         STAT CARDS
+         ============================================================ -->
+    <section class="card">
+        <h2>Stat Cards</h2>
+        <div class="summary-grid" style="margin-top: 20px;">
+            <article class="stat-card">
+                <span>Total Documents</span>
+                <strong>42</strong>
+            </article>
+            <article class="stat-card">
+                <span>Pending Review</span>
+                <strong>5</strong>
+            </article>
+            <article class="stat-card stat-card-highlight">
+                <span>Approved This Week</span>
+                <strong>28</strong>
+            </article>
+            <article class="stat-card">
+                <span>Error Rate</span>
+                <strong>2%</strong>
+            </article>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         EMPTY STATE
+         ============================================================ -->
+    <section class="card">
+        <h2>Empty State</h2>
+        <div class="empty-state" style="margin-top: 20px;">
+            <p><strong>No documents yet.</strong></p>
+            <p class="muted">Upload your first tax document to get started.</p>
+            <button type="button" class="button-primary">Upload Document</button>
+        </div>
+    </section>
+
+    <!-- ============================================================
+         TABLE WITH ACTIONS
+         ============================================================ -->
+    <section class="card">
+        <h2>Table Component</h2>
+        <div class="table-wrap" style="margin-top: 20px;">
+            <table>
+                <caption class="sr-only">Recent documents and their status</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Document Name</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Confidence</th>
+                        <th scope="col">Uploaded</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>2024 W-2 - ABC Corp.pdf</strong></td>
+                        <td><span class="badge badge-warning">Needs Review</span></td>
+                        <td><span class="confidence-score medium">68%</span></td>
+                        <td>Apr 15, 2026</td>
+                        <td>
+                            <button class="button-small button-primary" aria-label="Approve 2024 W-2 - ABC Corp.pdf">Approve</button>
+                            <button class="button-small button-secondary" aria-label="View details for 2024 W-2 - ABC Corp.pdf">View</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>1099-NEC - Freelance.pdf</strong></td>
+                        <td><span class="badge badge-success">Approved</span></td>
+                        <td><span class="confidence-score high">95%</span></td>
+                        <td>Apr 14, 2026</td>
+                        <td>
+                            <button class="button-small button-secondary" aria-label="View details for 1099-NEC - Freelance.pdf">View</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><strong>State Tax Return.pdf</strong></td>
+                        <td><span class="badge badge-error">Rejected</span></td>
+                        <td><span class="confidence-score low">32%</span></td>
+                        <td>Apr 10, 2026</td>
+                        <td>
+                            <button class="button-small button-ghost" aria-label="Reupload State Tax Return.pdf">Reupload</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</main>
+{% endblock %}

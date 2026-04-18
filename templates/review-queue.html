@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block content %}
+<main id="main" class="dashboard-shell">
+    <!-- Header -->
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Document Review Center</p>
+            <h1>Review Queue</h1>
+            <p class="muted">Documents sorted by confidence (lowest first for priority review).</p>
+        </div>
+        <nav class="topbar-nav">
+            <a href="/app" class="button button-secondary">← Back to Dashboard</a>
+        </nav>
+        <form action="/auth/logout" method="post" style="display: flex; gap: 8px;">
+            <button type="submit" class="button-secondary">Log Out</button>
+        </form>
+    </header>
+
+    <!-- Alerts -->
+    {% if notice %}
+    <div class="alert alert-success" role="alert">
+        <strong>Success:</strong> {{ notice }}
+    </div>
+    {% endif %}
+
+    <!-- Filter Bar -->
+    <section class="card" style="margin-bottom: var(--spacing-lg);">
+        <div class="filter-bar">
+            <label style="display: flex; align-items: center; gap: var(--spacing-sm);">
+                <input type="checkbox" id="filter-high" value="high" />
+                <span>High (≥80%)</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: var(--spacing-sm);">
+                <input type="checkbox" id="filter-medium" value="medium" checked />
+                <span>Medium (60–79%)</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: var(--spacing-sm);">
+                <input type="checkbox" id="filter-low" value="low" checked />
+                <span>Low (&lt;60%)</span>
+            </label>
+        </div>
+    </section>
+
+    <!-- Review Queue Table -->
+    <section class="card">
+        {% if documents %}
+        <div class="table-wrap">
+            <table>
+                <caption class="sr-only">Documents ready for review, sorted by confidence</caption>
+                <thead>
+                    <tr>
+                        <th scope="col" class="table-sortable" aria-sort="none">Document</th>
+                        <th scope="col">Type</th>
+                        <th scope="col" class="table-sortable" aria-sort="ascending">Confidence</th>
+                        <th scope="col">Extracted Fields Preview</th>
+                        <th scope="col">Uploaded</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for document in documents %}
+                    <tr>
+                        <td>
+                            <strong>{{ document.original_filename }}</strong>
+                            <br>
+                            <small class="muted">ID: {{ document.document_id|truncate(8, True) }}</small>
+                        </td>
+                        <td>
+                            {% if document.document_type %}
+                                <span class="badge badge-info">{{ document.document_type|upper }}</span>
+                            {% else %}
+                                <span class="badge badge-neutral">Unknown</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set conf = document.confidence | float %}
+                            {% if conf >= 80 %}
+                                <span class="confidence-score high" aria-label="High confidence: {{ '%.0f'|format(conf) }}%">{{ '%.0f'|format(conf) }}%</span>
+                            {% elif conf >= 60 %}
+                                <span class="confidence-score medium" aria-label="Medium confidence: {{ '%.0f'|format(conf) }}%">{{ '%.0f'|format(conf) }}%</span>
+                            {% else %}
+                                <span class="confidence-score low" aria-label="Low confidence: {{ '%.0f'|format(conf) }}%">{{ '%.0f'|format(conf) }}%</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <small class="muted">
+                                {% if document.extracted_data %}
+                                    3–5 fields extracted
+                                {% else %}
+                                    No data
+                                {% endif %}
+                                <button type="button" class="button-link" aria-label="Expand details for {{ document.original_filename }}" style="margin-left: var(--spacing-sm);">
+                                    [Show]
+                                </button>
+                            </small>
+                        </td>
+                        <td>
+                            {{ document.created_at.strftime('%b %d, %Y') if document.created_at else 'N/A' }}
+                            <br>
+                            <small class="muted">{{ document.created_at.strftime('%I:%M %p') if document.created_at else '' }}</small>
+                        </td>
+                        <td>
+                            <form action="/app/documents/{{ document.document_id }}/review" method="post" style="display: inline-block;">
+                                <input type="hidden" name="decision" value="approved">
+                                <button type="submit" class="button-small button-success" aria-label="Approve {{ document.original_filename }}">Approve</button>
+                            </form>
+                            <button type="button" class="button-small button-danger" aria-label="Reject {{ document.original_filename }}" onclick="openRejectDialog('{{ document.document_id }}')">Reject</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination (Phase 3.5) -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: var(--spacing-lg); padding-top: var(--spacing-lg); border-top: 1px solid var(--line);">
+            <small class="muted">Showing 1–{{ documents|length }} of {{ documents|length }} documents</small>
+            <div style="display: flex; gap: var(--spacing-sm);">
+                <button type="button" class="button button-secondary" disabled aria-label="Previous page">← Previous</button>
+                <button type="button" class="button button-secondary" disabled aria-label="Next page">Next →</button>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p><strong>All caught up!</strong></p>
+            <p class="muted">No documents waiting for review. Check back later.</p>
+            <a href="/app" class="button button-primary">Return to Dashboard</a>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Reject Dialog (Modal) — Hidden by default -->
+    <div id="reject-dialog" class="modal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="reject-title">
+        <div class="modal-content">
+            <h2 id="reject-title">Reject Document</h2>
+            <p class="muted">Provide feedback so the uploader can resubmit with corrections.</p>
+            
+            <form id="reject-form" method="post">
+                <input type="hidden" name="decision" value="rejected">
+                <input type="hidden" name="document-id" id="reject-document-id">
+                
+                <label>
+                    <span>Reason for Rejection</span>
+                    <textarea name="reviewer_notes" rows="4" placeholder="e.g., SSN field is unclear, wage amounts don't match W-2 summary..." required></textarea>
+                </label>
+                
+                <div style="display: flex; gap: var(--spacing-md); justify-content: flex-end; margin-top: var(--spacing-lg);">
+                    <button type="button" class="button button-secondary" onclick="closeRejectDialog()">Cancel</button>
+                    <button type="submit" class="button button-danger">Confirm Rejection</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reveal Extracted Data (Expandable Row) -->
+    <script type="text/javascript">
+        function openRejectDialog(documentId) {
+            const dialog = document.getElementById('reject-dialog');
+            const form = document.getElementById('reject-form');
+            const hiddenInput = document.getElementById('reject-document-id');
+            
+            hiddenInput.value = documentId;
+            form.action = `/app/documents/${documentId}/review`;
+            
+            dialog.style.display = 'flex';
+            dialog.querySelector('textarea').focus();
+        }
+        
+        function closeRejectDialog() {
+            const dialog = document.getElementById('reject-dialog');
+            dialog.style.display = 'none';
+        }
+        
+        // Close on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && document.getElementById('reject-dialog').style.display !== 'none') {
+                closeRejectDialog();
+            }
+        });
+    </script>
+</main>
+{% endblock %}

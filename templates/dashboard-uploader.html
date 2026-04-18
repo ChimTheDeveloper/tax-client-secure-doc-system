@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block content %}
+<main id="main" class="dashboard-shell">
+    <!-- Header (shared) -->
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Tax Intelligence Workspace</p>
+            <h1>{{ subject.display_name or subject.email or "Workspace" }}</h1>
+            <p class="muted">
+                <strong>Role:</strong> <span class="badge badge-info">Uploader</span>
+                {% if subject.email %}<br>{{ subject.email }}{% endif %}
+            </p>
+        </div>
+        <nav class="topbar-nav">
+            <a href="/app" class="button button-secondary">Dashboard</a>
+        </nav>
+        <form action="/auth/logout" method="post" style="display: flex; gap: 8px;">
+            <button type="submit" class="button-secondary">Log Out</button>
+        </form>
+        <button class="hamburger" aria-label="Toggle navigation menu" aria-expanded="false">
+            <span></span><span></span><span></span>
+        </button>
+    </header>
+
+    <!-- Mobile Navigation Menu -->
+    <nav class="mobile-nav" aria-hidden="true">
+        <a href="/app">Dashboard</a>
+        <a href="#">Settings</a>
+        <form action="/auth/logout" method="post" style="display: block;">
+            <button type="submit" style="background: transparent; color: var(--ink); border: none; padding: var(--spacing-md); width: 100%; text-align: left; cursor: pointer; font-weight: var(--font-weight-medium);">Log Out</button>
+        </form>
+    </nav>
+
+    <!-- Alerts -->
+    {% if notice %}
+    <div class="alert alert-success" role="alert">
+        <strong>Success:</strong> {{ notice }}
+    </div>
+    {% endif %}
+
+    {% if uploaded_document_id %}
+    <div class="alert alert-info" role="alert">
+        <strong>Document uploaded:</strong> ID {{ uploaded_document_id }}
+    </div>
+    {% endif %}
+
+    <!-- Quick Stats (Uploader-specific) -->
+    <section class="summary-grid">
+        <article class="stat-card">
+            <span>Processed</span>
+            <strong>{{ summary.auto_processed }}</strong>
+            <small class="muted">documents handled</small>
+        </article>
+        <article class="stat-card stat-card-highlight">
+            <span>Awaiting Review</span>
+            <strong>{{ summary.pending_review }}</strong>
+            <small class="muted">need attention</small>
+        </article>
+        <article class="stat-card">
+            <span>Errors</span>
+            <strong>0</strong>
+            <small class="muted">this month</small>
+        </article>
+    </section>
+
+    <!-- Upload Section -->
+    <section class="card">
+        <h2>Upload New Document</h2>
+        <p class="muted">Send a PDF through the production pipeline. Supported formats: PDF, PNG, JPG. Max 10MB.</p>
+        
+        <form action="/app/upload" method="post" enctype="multipart/form-data" class="form-stack">
+            <div class="dropzone" id="dropzone" role="region" aria-label="Document upload area">
+                <div class="dropzone-content">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <p><strong>Drag PDF here</strong> or click to select</p>
+                    <small class="muted">Max 10MB, single file</small>
+                </div>
+                <input 
+                    type="file" 
+                    name="file" 
+                    accept="application/pdf,image/png,image/jpeg" 
+                    required
+                    class="dropzone-input"
+                    aria-label="Select document to upload"
+                >
+            </div>
+            <button type="submit" class="button-primary">Upload and Process</button>
+        </form>
+    </section>
+
+    <!-- Your Documents -->
+    <section class="card">
+        <div class="section-header">
+            <div>
+                <h2>Your Recent Uploads</h2>
+                <p class="muted">Documents you've submitted, sorted by date.</p>
+            </div>
+        </div>
+
+        {% if documents %}
+        <div class="table-wrap">
+            <table>
+                <caption class="sr-only">Your uploaded documents and processing status</caption>
+                <thead>
+                    <tr>
+                        <th scope="col">Document</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Confidence</th>
+                        <th scope="col">Uploaded</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for document in documents %}
+                    <tr>
+                        <td><strong>{{ document.original_filename }}</strong></td>
+                        <td>
+                            {% if document.review_status == 'pending' %}
+                                <span class="badge badge-warning" aria-label="Status: Needs review">Needs Review</span>
+                            {% elif document.review_status == 'approved' %}
+                                <span class="badge badge-success" aria-label="Status: Approved">Approved</span>
+                            {% elif document.review_status == 'rejected' %}
+                                <span class="badge badge-error" aria-label="Status: Rejected">Rejected</span>
+                            {% else %}
+                                <span class="badge badge-neutral">{{ document.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set conf = document.confidence | float %}
+                            {% if conf >= 80 %}
+                                <span class="confidence-score high" aria-label="High confidence">{{ '%.0f'|format(conf) }}%</span>
+                            {% elif conf >= 60 %}
+                                <span class="confidence-score medium" aria-label="Medium confidence">{{ '%.0f'|format(conf) }}%</span>
+                            {% else %}
+                                <span class="confidence-score low" aria-label="Low confidence">{{ '%.0f'|format(conf) }}%</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ document.created_at.strftime('%b %d, %Y') if document.created_at else 'N/A' }}</td>
+                        <td>
+                            <button class="button-small button-secondary" aria-label="View details for {{ document.original_filename }}">View</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p><strong>No documents yet.</strong></p>
+            <p class="muted">Upload your first tax document to start the workflow.</p>
+            <button type="button" class="button-primary" onclick="document.querySelector('input[type=file]')?.click()">Upload Now</button>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Recent Activity Timeline -->
+    <section class="card">
+        <h2>Recent Activity</h2>
+        <div class="timeline">
+            <div class="timeline-item">
+                <span class="timeline-date">Today, 2:30 PM</span>
+                <p><strong>Document approved</strong> — "Annual Return 2024.pdf" was reviewed and approved.</p>
+            </div>
+            <div class="timeline-item">
+                <span class="timeline-date">Apr 17, 10:15 AM</span>
+                <p><strong>Document uploaded</strong> — "W-2 Form.pdf" submitted for processing.</p>
+            </div>
+            <div class="timeline-item">
+                <span class="timeline-date">Apr 16, 3:45 PM</span>
+                <p><strong>Document flagged</strong> — "State Tax Return.pdf" needs manual review (48% confidence).</p>
+            </div>
+            <div class="timeline-item">
+                <span class="timeline-date">Apr 15, 9:00 AM</span>
+                <p><strong>Document approved</strong> — "1099 Income.pdf" successfully processed.</p>
+            </div>
+        </div>
+    </section>
+</main>
+
+<style>
+/* Dropzone */
+.dropzone {
+    border: 2px dashed var(--color-gray-400);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-lg);
+    text-align: center;
+    cursor: pointer;
+    transition: all 150ms ease;
+    background-color: var(--color-gray-50);
+    position: relative;
+}
+
+.dropzone:hover {
+    border-color: var(--color-success);
+    background-color: var(--color-success-light);
+}
+
+.dropzone-content {
+    pointer-events: none;
+    color: var(--color-gray-700);
+}
+
+.dropzone-content svg {
+    display: block;
+    margin: 0 auto var(--spacing-md);
+    color: var(--color-gray-500);
+}
+
+.dropzone-input {
+    display: none;
+}
+
+/* Timeline */
+.timeline {
+    position: relative;
+    padding-left: var(--spacing-lg);
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: var(--color-gray-300);
+}
+
+.timeline-item {
+    margin-bottom: var(--spacing-lg);
+    padding-left: var(--spacing-md);
+}
+
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -7px;
+    top: 4px;
+    width: 12px;
+    height: 12px;
+    background-color: var(--color-success);
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px var(--color-success);
+}
+
+.timeline-date {
+    font-size: var(--font-size-xs);
+    color: var(--color-gray-600);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.timeline-item p {
+    margin: var(--spacing-xs) 0 0;
+    color: var(--color-gray-700);
+}
+</style>
+{% endblock %}

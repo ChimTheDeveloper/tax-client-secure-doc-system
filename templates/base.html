@@ -8,10 +8,28 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', path='/styles.css') }}">
+    <script>
+        // Phase 4: Dark mode preference detection and application
+        (function() {
+            const html = document.documentElement;
+            const storedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const theme = storedTheme || (prefersDark ? 'dark' : 'light');
+            
+            if (theme === 'dark') {
+                html.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
 </head>
 <body>
+    <a href="#main" class="skip-to-main">Skip to main content</a>
+    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark/light mode" title="Toggle dark/light mode">🌙</button>
     <div class="page-shell">
         {% block content %}{% endblock %}
     </div>
+    
+    <!-- Phase 3: Form validation, menu toggle, password strength -->
+    <script src="{{ url_for('static', path='/phase3.js') }}" defer></script>
 </body>
 </html>
