@@ -241,3 +241,46 @@ The biggest remaining production steps are:
 - define retention and encryption strategy for stored sensitive data
 
 That is the right posture for interviews too: strong engineering work paired with honest scope management.
+
+## 15. Why Improve Delivery and Runtime Metadata
+
+The next step after backend hardening was making the service easier to run and easier to verify in different environments.
+
+That led to four changes:
+
+- the `Dockerfile` now runs as a non-root user
+- `compose.yaml` provides a one-command local deployment workflow
+- the `Makefile` standardizes setup, test, and run commands
+- `/health` and `/ready` now report version and environment metadata
+
+This matters because production readiness is not only about business logic. It is also about repeatability:
+
+1. Can a teammate run the system from a clean checkout?
+2. Can a reviewer tell which build is running?
+3. Can the app start in a container without special manual steps?
+
+Those are small operational details, but they make the difference between "code that works on one machine" and "a service that is ready to be demonstrated, deployed, and maintained."
+
+## 16. Why Build Invite-Only Local Accounts Before Google Sign-In
+
+The next product gap was user identity. The service had API-key protection, but that was not enough for a real reviewer workflow or a portfolio-quality browser experience.
+
+I chose invite-only local accounts first for three reasons:
+
+1. It creates a true user model with roles, sessions, and ownership rules right away.
+2. It is faster to implement and explain than a full external identity-provider integration.
+3. It still keeps the architecture ready for future Google sign-in and broader email onboarding.
+
+That is why the auth tables now store provider metadata and why sessions are separate from the actual authentication method. The current login flow uses local passwords, but the app is no longer structurally tied to that forever.
+
+## 17. Why Add a Lightweight Server-Rendered UI
+
+At this stage, a full separate frontend framework would have slowed delivery more than it would have improved the product.
+
+The browser workspace is intentionally lightweight:
+
+- FastAPI still owns the backend
+- Jinja templates render the login, invite, and dashboard pages
+- the same role system protects both API and browser workflows
+
+This was the right tradeoff because the goal was to make the project demoable quickly without splitting the codebase into two deployment surfaces too early.

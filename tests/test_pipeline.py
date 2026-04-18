@@ -10,6 +10,8 @@ from src.processing.pipeline import process_tax_document
 
 
 TEST_SETTINGS = Settings(
+    app_environment="test",
+    app_version="0.3.0",
     aws_region="us-east-1",
     s3_bucket_name="test-bucket",
     max_file_size_bytes=5 * 1024 * 1024,
@@ -21,6 +23,12 @@ TEST_SETTINGS = Settings(
     enable_local_audit_log=False,
     enable_local_result_storage=False,
     local_result_path="processed_results.json",
+    session_cookie_name="tax_app_session",
+    session_duration_hours=12,
+    invite_duration_hours=72,
+    bootstrap_admin_email=None,
+    bootstrap_admin_password=None,
+    bootstrap_admin_name="Platform Admin",
 )
 
 

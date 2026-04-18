@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<main class="auth-layout">
+    <section class="hero-panel">
+        <p class="eyebrow">Secure Tax Document Operations</p>
+        <h1>Production-minded document intelligence for tax teams.</h1>
+        <p class="hero-copy">
+            Invite-only accounts are live now so the product is secure and demoable today.
+            The auth model is intentionally designed so full email/password onboarding and
+            Google sign-in can plug into the same user and session system next.
+        </p>
+        <ul class="hero-list">
+            <li>Role-based access for admins, reviewers, and uploaders</li>
+            <li>Manual review queue with audit-friendly metadata</li>
+            <li>Session-based UI plus API-key access for service integrations</li>
+        </ul>
+    </section>
+
+    <section class="card auth-card">
+        <h2>Sign In</h2>
+        <p class="muted">Use your invited account credentials to enter the review workspace.</p>
+
+        {% if error_message %}
+        <div class="alert alert-error">{{ error_message }}</div>
+        {% endif %}
+
+        <form action="/auth/login" method="post" class="form-stack">
+            <label>
+                <span>Email</span>
+                <input type="email" name="email" placeholder="name@firm.com" required>
+            </label>
+            <label>
+                <span>Password</span>
+                <input type="password" name="password" placeholder="Enter your password" required>
+            </label>
+            <button type="submit" class="button-primary">Enter Workspace</button>
+        </form>
+    </section>
+</main>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<main class="auth-layout invite-layout">
+    <section class="hero-panel">
+        <p class="eyebrow">Invite-Only Onboarding</p>
+        <h1>Activate your account.</h1>
+        <p class="hero-copy">
+            This invite creates a secure local account today while preserving a clean path to
+            future managed sign-in options such as Google and broader email onboarding.
+        </p>
+        <div class="card invite-summary">
+            <p><strong>Name:</strong> {{ invite.full_name }}</p>
+            <p><strong>Email:</strong> {{ invite.email }}</p>
+            <p><strong>Role:</strong> {{ invite.role }}</p>
+            <p><strong>Expires:</strong> {{ invite.expires_at }}</p>
+        </div>
+    </section>
+
+    <section class="card auth-card">
+        <h2>Set Password</h2>
+        <p class="muted">Choose a password with at least 10 characters.</p>
+
+        {% if error_message %}
+        <div class="alert alert-error">{{ error_message }}</div>
+        {% endif %}
+
+        <form action="/auth/accept-invite" method="post" class="form-stack">
+            <input type="hidden" name="token" value="{{ token }}">
+            <label>
+                <span>Password</span>
+                <input type="password" name="password" required>
+            </label>
+            <label>
+                <span>Confirm Password</span>
+                <input type="password" name="confirm_password" required>
+            </label>
+            <button type="submit" class="button-primary">Create Account</button>
+        </form>
+    </section>
+</main>
+{% endblock %}

@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block content %}
+<main class="dashboard-shell">
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Tax Intelligence Workspace</p>
+            <h1>{{ subject.display_name or subject.email or "Workspace" }}</h1>
+            <p class="muted">
+                Role: <strong>{{ subject.role }}</strong>
+                {% if subject.email %} | {{ subject.email }}{% endif %}
+            </p>
+        </div>
+        <form action="/auth/logout" method="post">
+            <button type="submit" class="button-secondary">Log Out</button>
+        </form>
+    </header>
+
+    {% if notice %}
+    <div class="alert alert-success">{{ notice }}</div>
+    {% endif %}
+
+    {% if uploaded_document_id %}
+    <div class="alert alert-info">Latest upload document ID: {{ uploaded_document_id }}</div>
+    {% endif %}
+
+    <section class="summary-grid">
+        <article class="stat-card">
+            <span>Total Documents</span>
+            <strong>{{ summary.total_documents }}</strong>
+        </article>
+        <article class="stat-card">
+            <span>Pending Review</span>
+            <strong>{{ summary.pending_review }}</strong>
+        </article>
+        <article class="stat-card">
+            <span>Approved</span>
+            <strong>{{ summary.approved_review }}</strong>
+        </article>
+        <article class="stat-card">
+            <span>Auto Processed</span>
+            <strong>{{ summary.auto_processed }}</strong>
+        </article>
+    </section>
+
+    <section class="panel-grid">
+        <section class="card">
+            <h2>Upload Document</h2>
+            <p class="muted">Send a PDF through the same production pipeline used by the API.</p>
+            <form action="/app/upload" method="post" enctype="multipart/form-data" class="form-stack">
+                <label>
+                    <span>Tax Document PDF</span>
+                    <input type="file" name="file" accept="application/pdf" required>
+                </label>
+                <button type="submit" class="button-primary">Upload and Process</button>
+            </form>
+        </section>
+
+        {% if can_invite %}
+        <section class="card">
+            <h2>Invite User</h2>
+            <p class="muted">Provision secure local accounts by role while we keep the future Google sign-in path open.</p>
+            <form action="/app/invites" method="post" class="form-stack">
+                <label>
+                    <span>Full Name</span>
+                    <input type="text" name="full_name" required>
+                </label>
+                <label>
+                    <span>Email</span>
+                    <input type="email" name="email" required>
+                </label>
+                <label>
+                    <span>Role</span>
+                    <select name="role" required>
+                        <option value="reviewer">Reviewer</option>
+                        <option value="uploader">Uploader</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </label>
+                <button type="submit" class="button-primary">Create Invite</button>
+            </form>
+        </section>
+        {% endif %}
+    </section>
+
+    <section class="card">
+        <div class="section-header">
+            <div>
+                <h2>Recent Documents</h2>
+                <p class="muted">Low-confidence documents remain in the queue until a reviewer resolves them.</p>
+            </div>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Filename</th>
+                        <th>Status</th>
+                        <th>Review</th>
+                        <th>Confidence</th>
+                        <th>Submitted By</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for document in documents %}
+                    <tr>
+                        <td>{{ document.original_filename }}</td>
+                        <td>{{ document.status }}</td>
+                        <td>{{ document.review_status }}</td>
+                        <td>{{ '%.2f'|format(document.confidence) }}</td>
+                        <td>{{ document.submitted_by }}</td>
+                        <td>
+                            {% if can_review and document.review_status == 'pending' %}
+                            <form action="/app/documents/{{ document.document_id }}/review" method="post" class="inline-review-form">
+                                <input type="hidden" name="decision" value="approved">
+                                <input type="text" name="reviewer_notes" placeholder="Reviewer note">
+                                <button type="submit" class="button-small">Approve</button>
+                            </form>
+                            <form action="/app/documents/{{ document.document_id }}/review" method="post" class="inline-review-form">
+                                <input type="hidden" name="decision" value="rejected">
+                                <input type="text" name="reviewer_notes" placeholder="Reason for rejection">
+                                <button type="submit" class="button-small button-ghost">Reject</button>
+                            </form>
+                            {% else %}
+                            <span class="muted">No action required</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="empty-state">No documents yet. Upload your first PDF to start the workflow.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    {% if can_invite %}
+    <section class="card">
+        <h2>Users</h2>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Provider</th>
+                        <th>Last Login</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td>{{ user.full_name }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.role }}</td>
+                        <td>{{ user.auth_provider }}</td>
+                        <td>{{ user.last_login_at or 'Never' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="empty-state">No users have been created yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+    {% endif %}
+</main>
+{% endblock %}

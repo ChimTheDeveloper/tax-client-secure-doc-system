@@ -139,6 +139,7 @@ class DocumentRepository:
         review_status: str | None = None,
         processing_status: str | None = None,
         document_type: str | None = None,
+        submitted_by: str | None = None,
         search: str | None = None,
         limit: int = 50,
         offset: int = 0,
@@ -158,6 +159,10 @@ class DocumentRepository:
         if document_type:
             where_clauses.append("document_type = ?")
             params.append(document_type)
+
+        if submitted_by:
+            where_clauses.append("submitted_by = ?")
+            params.append(submitted_by)
 
         if search:
             where_clauses.append("(original_filename LIKE ? OR file_name LIKE ? OR document_id LIKE ?)")
@@ -222,10 +227,16 @@ class DocumentRepository:
         updated["status"] = existing["status"]
         return updated
 
-    def get_summary(self) -> dict[str, Any]:
+    def get_summary(self, *, submitted_by: str | None = None) -> dict[str, Any]:
+        params: list[Any] = []
+        where_clause = ""
+        if submitted_by:
+            where_clause = "WHERE submitted_by = ?"
+            params.append(submitted_by)
+
         with self._connect() as connection:
             totals = connection.execute(
-                """
+                f"""
                 SELECT
                     COUNT(*) AS total_documents,
                     SUM(CASE WHEN review_status = 'pending' THEN 1 ELSE 0 END) AS pending_review,
@@ -234,16 +245,20 @@ class DocumentRepository:
                     SUM(CASE WHEN review_status = 'not_required' THEN 1 ELSE 0 END) AS auto_processed,
                     SUM(CASE WHEN status = 'needs_review' THEN 1 ELSE 0 END) AS needs_review
                 FROM documents
-                """
+                {where_clause}
+                """,
+                params,
             ).fetchone()
 
             type_rows = connection.execute(
-                """
+                f"""
                 SELECT document_type, COUNT(*) AS count
                 FROM documents
+                {where_clause}
                 GROUP BY document_type
                 ORDER BY document_type ASC
-                """
+                """,
+                params,
             ).fetchall()
 
         return {

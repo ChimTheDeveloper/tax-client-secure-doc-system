@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from io import BytesIO
+from urllib.parse import parse_qs, urlparse
 from unittest.mock import patch
+
+from fastapi.testclient import TestClient
 
 TEST_PDF_BYTES = b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF"
 AUTH_HEADERS = {"X-API-Key": "test-api-key"}
@@ -15,7 +18,11 @@ def test_health_endpoint_returns_ok(client):
     response = client.get("/health")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    assert response.json() == {
+        "status": "ok",
+        "version": "0.3.0",
+        "environment": "development",
+    }
     assert response.headers["X-Request-ID"]
 
 
@@ -235,5 +242,147 @@ def test_readiness_reports_auth_state(client):
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "ready"
+    assert body["version"] == "0.3.0"
+    assert body["environment"] == "development"
     dependency_names = {dependency["name"] for dependency in body["dependencies"]}
     assert {"sqlite", "auth", "s3", "textract_region"} <= dependency_names
+
+
+def test_bootstrap_admin_can_log_in_and_view_dashboard(client):
+    login_page = client.get("/login")
+    assert login_page.status_code == 200
+    assert "Sign In" in login_page.text
+
+    response = client.post(
+        "/auth/login",
+        data={"email": "admin@example.com", "password": "supersecurepass"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 302
+    assert response.headers["location"] == "/app"
+    assert "tax_app_session=" in response.headers["set-cookie"]
+
+    dashboard = client.get("/app")
+    assert dashboard.status_code == 200
+    assert "Invite User" in dashboard.text
+    assert "Admin User" in dashboard.text
+
+
+def test_admin_can_invite_and_accept_reviewer_account(app):
+    admin_client = TestClient(app)
+    admin_login = admin_client.post(
+        "/auth/login",
+        data={"email": "admin@example.com", "password": "supersecurepass"},
+        follow_redirects=False,
+    )
+    assert admin_login.status_code == 302
+
+    invite_response = admin_client.post(
+        "/admin/invites",
+        json={
+            "email": "reviewer@example.com",
+            "full_name": "Review User",
+            "role": "reviewer",
+        },
+    )
+    assert invite_response.status_code == 200
+    invite_url = invite_response.json()["invite_url"]
+    token = parse_qs(urlparse(invite_url).query)["token"][0]
+
+    reviewer_client = TestClient(app)
+    accept_page = reviewer_client.get(f"/accept-invite?token={token}")
+    assert accept_page.status_code == 200
+    assert "Review User" in accept_page.text
+
+    accept_response = reviewer_client.post(
+        "/auth/accept-invite",
+        data={
+            "token": token,
+            "password": "reviewerpass123",
+            "confirm_password": "reviewerpass123",
+        },
+        follow_redirects=False,
+    )
+    assert accept_response.status_code == 302
+
+    me_response = reviewer_client.get("/auth/me")
+    assert me_response.status_code == 200
+    assert me_response.json()["user"]["email"] == "reviewer@example.com"
+    assert me_response.json()["user"]["role"] == "reviewer"
+
+
+@patch("src.api.main.process_tax_document")
+def test_uploader_can_only_access_their_own_documents(mock_process_tax_document, app):
+    mock_process_tax_document.return_value = {
+        "status": "success",
+        "file_name": "generated.pdf",
+        "file_size": len(TEST_PDF_BYTES),
+        "document_type": "W2",
+        "data": {"wages_box_1": 55000.0},
+        "confidence": 0.9,
+        "requires_manual_review": False,
+        "warnings": [],
+        "field_confidence": {
+            "employee_ssn": "high",
+            "employer_ein": "high",
+            "wages_box_1": "high",
+            "federal_tax_box_2": "high",
+        },
+    }
+
+    admin_client = TestClient(app)
+    admin_client.post(
+        "/auth/login",
+        data={"email": "admin@example.com", "password": "supersecurepass"},
+    )
+    invite_response = admin_client.post(
+        "/admin/invites",
+        json={
+            "email": "uploader@example.com",
+            "full_name": "Upload User",
+            "role": "uploader",
+        },
+    )
+    token = parse_qs(urlparse(invite_response.json()["invite_url"]).query)["token"][0]
+
+    uploader_client = TestClient(app)
+    uploader_client.post(
+        "/auth/accept-invite",
+        data={
+            "token": token,
+            "password": "uploaderpass123",
+            "confirm_password": "uploaderpass123",
+        },
+    )
+
+    uploader_upload = uploader_client.post(
+        "/upload",
+        files=_upload_payload("uploader.pdf", TEST_PDF_BYTES),
+    )
+    assert uploader_upload.status_code == 200
+    uploader_document_id = uploader_upload.json()["document_id"]
+
+    admin_upload = admin_client.post(
+        "/upload",
+        files=_upload_payload("admin.pdf", TEST_PDF_BYTES),
+    )
+    assert admin_upload.status_code == 200
+    admin_document_id = admin_upload.json()["document_id"]
+
+    documents_response = uploader_client.get("/documents")
+    assert documents_response.status_code == 200
+    body = documents_response.json()
+    assert len(body["documents"]) == 1
+    assert body["documents"][0]["document_id"] == uploader_document_id
+
+    summary_response = uploader_client.get("/documents/summary")
+    assert summary_response.status_code == 200
+    assert summary_response.json()["total_documents"] == 1
+
+    own_document_response = uploader_client.get(f"/documents/{uploader_document_id}")
+    assert own_document_response.status_code == 200
+
+    forbidden_response = uploader_client.get(f"/documents/{admin_document_id}")
+    assert forbidden_response.status_code == 403
+    assert forbidden_response.json()["error_code"] == "authorization_error"

@@ -15,6 +15,8 @@ def _get_bool_env(name: str, default: bool) -> bool:
 
 @dataclass(frozen=True)
 class Settings:
+    app_environment: str
+    app_version: str
     aws_region: str
     s3_bucket_name: str
     max_file_size_bytes: int
@@ -26,6 +28,12 @@ class Settings:
     enable_local_audit_log: bool
     enable_local_result_storage: bool
     local_result_path: str
+    session_cookie_name: str
+    session_duration_hours: int
+    invite_duration_hours: int
+    bootstrap_admin_email: str | None
+    bootstrap_admin_password: str | None
+    bootstrap_admin_name: str
 
 
 @lru_cache(maxsize=1)
@@ -38,6 +46,8 @@ def get_settings() -> Settings:
     )
 
     return Settings(
+        app_environment=os.getenv("TAX_APP_ENVIRONMENT", "development"),
+        app_version=os.getenv("TAX_APP_VERSION", "0.3.0"),
         aws_region=os.getenv("TAX_APP_AWS_REGION", "us-east-1"),
         s3_bucket_name=os.getenv("TAX_APP_S3_BUCKET", "tax-doc-system-chim-dev"),
         max_file_size_bytes=int(os.getenv("TAX_APP_MAX_FILE_SIZE_BYTES", str(5 * 1024 * 1024))),
@@ -49,4 +59,10 @@ def get_settings() -> Settings:
         enable_local_audit_log=_get_bool_env("TAX_APP_ENABLE_LOCAL_AUDIT_LOG", False),
         enable_local_result_storage=_get_bool_env("TAX_APP_ENABLE_LOCAL_RESULT_STORAGE", False),
         local_result_path=os.getenv("TAX_APP_LOCAL_RESULT_PATH", "processed_results.json"),
+        session_cookie_name=os.getenv("TAX_APP_SESSION_COOKIE_NAME", "tax_app_session"),
+        session_duration_hours=int(os.getenv("TAX_APP_SESSION_DURATION_HOURS", "12")),
+        invite_duration_hours=int(os.getenv("TAX_APP_INVITE_DURATION_HOURS", "72")),
+        bootstrap_admin_email=os.getenv("TAX_APP_BOOTSTRAP_ADMIN_EMAIL"),
+        bootstrap_admin_password=os.getenv("TAX_APP_BOOTSTRAP_ADMIN_PASSWORD"),
+        bootstrap_admin_name=os.getenv("TAX_APP_BOOTSTRAP_ADMIN_NAME", "Platform Admin"),
     )

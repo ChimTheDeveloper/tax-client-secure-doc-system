@@ -23,6 +23,12 @@ class AuthenticationError(ApplicationError):
     detail = "Authentication failed."
 
 
+class AuthorizationError(ApplicationError):
+    status_code = 403
+    error_code = "authorization_error"
+    detail = "You do not have permission to perform this action."
+
+
 class ConfigurationError(ApplicationError):
     status_code = 503
     error_code = "configuration_error"

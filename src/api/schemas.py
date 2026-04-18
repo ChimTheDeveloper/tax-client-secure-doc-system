@@ -18,8 +18,16 @@ class ReviewStatus(str, Enum):
     REJECTED = "rejected"
 
 
+class UserRole(str, Enum):
+    ADMIN = "admin"
+    REVIEWER = "reviewer"
+    UPLOADER = "uploader"
+
+
 class HealthResponse(BaseModel):
     status: str = "ok"
+    version: str
+    environment: str
 
 
 class DependencyHealth(BaseModel):
@@ -30,6 +38,8 @@ class DependencyHealth(BaseModel):
 
 class ReadinessResponse(BaseModel):
     status: str
+    version: str
+    environment: str
     dependencies: list[DependencyHealth] = Field(default_factory=list)
 
 
@@ -85,3 +95,44 @@ class ReviewDecision(str, Enum):
 class ReviewDecisionRequest(BaseModel):
     decision: ReviewDecision
     reviewer_notes: str | None = Field(default=None, max_length=2000)
+
+
+class UserResponse(BaseModel):
+    user_id: str
+    email: str
+    full_name: str
+    role: UserRole
+    auth_provider: str
+    is_active: bool
+    created_at: str
+    updated_at: str
+    last_login_at: str | None = None
+
+
+class UserListResponse(BaseModel):
+    users: list[UserResponse] = Field(default_factory=list)
+
+
+class InviteUserRequest(BaseModel):
+    email: str
+    full_name: str = Field(min_length=1, max_length=120)
+    role: UserRole
+
+
+class InviteResponse(BaseModel):
+    invite_id: str
+    email: str
+    full_name: str
+    role: UserRole
+    invite_url: str
+    expires_at: str
+    created_at: str
+
+
+class AcceptInviteRequest(BaseModel):
+    token: str
+    password: str = Field(min_length=10, max_length=128)
+
+
+class SessionResponse(BaseModel):
+    user: UserResponse
