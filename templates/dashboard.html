@@ -142,7 +142,7 @@
                                 <span class="confidence-score low" aria-label="Low confidence">{{ '%.0f'|format(conf) }}%</span>
                             {% endif %}
                         </td>
-                        <td>{{ document.created_at.strftime('%b %d, %Y') if document.created_at else 'N/A' }}</td>
+                        <td>{{ document.created_at if document.created_at else 'N/A' }}</td>
                         <td>{{ document.submitted_by or 'Unknown' }}</td>
                         <td>
                             {% if can_review and document.review_status == 'pending' %}

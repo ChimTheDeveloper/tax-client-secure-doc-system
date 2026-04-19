@@ -140,7 +140,7 @@
                                 <span class="confidence-score low" aria-label="Low confidence">{{ '%.0f'|format(conf) }}%</span>
                             {% endif %}
                         </td>
-                        <td>{{ document.created_at.strftime('%b %d, %Y') if document.created_at else 'N/A' }}</td>
+                        <td>{{ document.created_at if document.created_at else 'N/A' }}</td>
                         <td>
                             <button class="button-small button-secondary" aria-label="View details for {{ document.original_filename }}">View</button>
                         </td>

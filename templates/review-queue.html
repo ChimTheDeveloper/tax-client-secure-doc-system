@@ -96,9 +96,9 @@
                             </small>
                         </td>
                         <td>
-                            {{ document.created_at.strftime('%b %d, %Y') if document.created_at else 'N/A' }}
+                            {{ document.created_at if document.created_at else 'N/A' }}
                             <br>
-                            <small class="muted">{{ document.created_at.strftime('%I:%M %p') if document.created_at else '' }}</small>
+                            <small class="muted"></small>
                         </td>
                         <td>
                             <form action="/app/documents/{{ document.document_id }}/review" method="post" style="display: inline-block;">

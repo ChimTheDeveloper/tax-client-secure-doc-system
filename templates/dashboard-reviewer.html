@@ -119,7 +119,7 @@
                                 <span class="confidence-score low" aria-label="Low confidence">{{ '%.0f'|format(conf) }}%</span>
                             {% endif %}
                         </td>
-                        <td>{{ document.reviewed_at.strftime('%b %d, %Y') if document.reviewed_at else 'Pending' }}</td>
+                        <td>{{ document.reviewed_at if document.reviewed_at else 'Pending' }}</td>
                         <td>
                             <button class="button-small button-secondary" aria-label="Review details for {{ document.original_filename }}">Expand</button>
                         </td>

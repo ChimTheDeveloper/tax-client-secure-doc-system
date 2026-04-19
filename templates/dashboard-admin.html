@@ -132,7 +132,7 @@
                             <td>
                                 <span class="badge badge-success">Active</span>
                             </td>
-                            <td>{{ user.created_at.strftime('%b %d, %Y') if user.created_at else 'N/A' }}</td>
+                            <td>{{ user.created_at if user.created_at else 'N/A' }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>

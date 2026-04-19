@@ -1557,8 +1557,7 @@ td button:last-child {
    PHASE 4: Dark Mode Background & Micro-Interactions
    ============================================================ */
 
-/* Dark mode background */
-html[data-theme="dark"] body,
+/* Dark mode background - System preference */
 @media (prefers-color-scheme: dark) {
     body {
         background:
@@ -1568,6 +1567,7 @@ html[data-theme="dark"] body,
     }
 }
 
+/* Dark mode background - Manual toggle */
 html[data-theme="dark"] body {
     background:
         radial-gradient(circle at top left, rgba(29, 209, 161, 0.08), transparent 30%),
